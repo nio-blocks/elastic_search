@@ -15,8 +15,8 @@ Dependencies
 
 Commands
 ----------------
-connected: determines if elasticsearch server is available
-search: performs a search from given 'body' parameters
+-   connected: determines if elasticsearch server is available
+-   search: performs a search from given 'body' parameters
 
 Input
 -------
