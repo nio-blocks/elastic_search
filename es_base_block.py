@@ -7,9 +7,10 @@ from nio.common.command import command
 from nio.common.discovery import Discoverable, DiscoverableType
 
 
-@command("search", DictParameter("params", default={}))
-@command("search", DictParameter("body", default={}))
-@command("search", StringParameter("doc_type", default=""))
+@command("search",
+         StringParameter("doc_type", default=""),
+         DictParameter("body", default={}),
+         DictParameter("params", default={}))
 @command("connected")
 @Discoverable(DiscoverableType.block)
 class ESBase(Block):
@@ -31,8 +32,11 @@ class ESBase(Block):
 
     def configure(self, context):
         super().configure(context)
+        self._es = self.create_elastic_search_instance(context)
+
+    def create_elastic_search_instance(self, context):
         from elasticsearch import Elasticsearch
-        self._es = Elasticsearch()
+        return Elasticsearch()
 
     def process_signals(self, signals, input_id='default'):
         for s in signals:
@@ -43,9 +47,17 @@ class ESBase(Block):
                 self._logger.error("Failed to insert signal: {}, details: {}".
                                    format(s.to_dict(), str(e)))
 
+    def _evaluate_doc_type(self, signal):
+        try:
+            return self.doc_type(signal)
+        except Exception as e:
+            self._logger.error("doc_type failed to evaluate, details: {0}".
+                               format(str(e)))
+            raise e
+
     def _insert_signal(self, signal):
         body = signal.to_dict()
-        doc_type = self.doc_type(signal)
+        doc_type = self._evaluate_doc_type(signal)
 
         self._logger.debug("Inserting {} to: {}, type: {}".
                            format(body, self.index, doc_type))
