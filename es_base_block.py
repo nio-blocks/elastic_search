@@ -48,7 +48,7 @@ class ESBase(Block):
             if doc_type:
                 try:
                     result = self.execute_query(doc_type, s)
-                    if result:
+                    if result and isinstance(result, list):
                         output.extend(result)
                 except:
                     # If the execute call fails, we won't use this signal
