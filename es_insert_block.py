@@ -15,7 +15,9 @@ class ESInsert(ESBase):
 
     """
     with_type = BoolProperty(
-        title='Include the type of logged signals?', default=False)
+        title='Include the type of logged signals?',
+        default=False,
+        visible=False)
 
     def execute_query(self, doc_type, signal):
         body = signal.to_dict(self.with_type)
