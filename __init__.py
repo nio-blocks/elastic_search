@@ -32,7 +32,6 @@ def evaluate_expression(expression, signal, force_dict=True):
             except Exception as e:
                 # Didn't work, this may or may not be a problem, we'll find out
                 # in the next block of code
-                print(str(e))
                 pass
 
         if not isinstance(exp_result, dict):
