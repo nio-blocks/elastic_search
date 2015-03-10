@@ -1,3 +1,7 @@
+import ast
+from enum import Enum
+import logging
+
 from nio.common.block.base import Block
 from nio.metadata.properties import StringProperty, ExpressionProperty
 from nio.common.command import command
@@ -30,6 +34,7 @@ class ESBase(Block):
     def configure(self, context):
         super().configure(context)
         self._es = self.create_elastic_search_instance(context)
+        logging.getLogger('elasticsearch').setLevel(self.log_level.value)
 
     def create_elastic_search_instance(self, context):
         from elasticsearch import Elasticsearch
