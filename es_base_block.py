@@ -1,5 +1,3 @@
-import ast
-from enum import Enum
 import logging
 
 from nio.common.block.base import Block
@@ -61,10 +59,10 @@ class ESBase(Block):
             self.notify_signals(output)
 
     def query_args(self, signal=None):
-        """ Query arguments to use in the pymongo query.
+        """ Query arguments to use in the ES query.
 
         Returns:
-            args (dict): A dictionary of kwargs to pass to pymongo queries
+            args (dict): A dictionary of kwargs to pass to ES queries
         """
         return {}
 
@@ -72,13 +70,13 @@ class ESBase(Block):
         """ Run this block's query on the provided collection.
 
         This should be overriden in the child blocks. It will be passed
-        a valid pymongo collection against which it can query.
+        a document type and a signal which caused the query to run.
 
         If the block wishes, it may return a list of signals that will be
         notified.
 
         Params:
-            collection (pymongo.Collection): A valid collection
+            doc_type: The type of the document
             signal (Signal): The signal which triggered the query
 
         Returns:
@@ -89,10 +87,9 @@ class ESBase(Block):
     def _evaluate_doc_type(self, signal):
         try:
             return self.doc_type(signal)
-        except Exception as e:
-            self._logger.error("doc_type failed to evaluate, details: {0}".
-                               format(str(e)))
-            raise e
+        except:
+            self._logger.exception("doc_type failed to evaluate")
+            raise
 
     def connected(self):
         return self._es.ping()
