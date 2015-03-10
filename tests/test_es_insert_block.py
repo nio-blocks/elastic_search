@@ -12,8 +12,9 @@ class TestESInsert(NIOBlockTestCase):
     """
 
     def setUp(self):
-        super().setUp()
         self._outcome.success = elasticsearch_running()
+        if self._outcome.success:
+            super().setUp()
 
     def test_search(self):
         blk = ESInsert()

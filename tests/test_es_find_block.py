@@ -15,11 +15,12 @@ class TestESFind(NIOBlockTestCase):
     """
 
     def setUp(self):
-        super().setUp()
         self._outcome.success = elasticsearch_running()
+        if self._outcome.success:
+            super().setUp()
 
     @sleeping_test
-    def t1est_find(self):
+    def test_find(self):
         # execute an insertion
         insert_blk = ESInsert()
         index = "ESFindIndex".lower()
@@ -66,7 +67,7 @@ class TestESFind(NIOBlockTestCase):
         find_blk.stop()
 
     @sleeping_test
-    def t1est_size_and_offset(self):
+    def test_size_and_offset(self):
         # execute an insertion
         insert_blk = ESInsert()
         index = "ESFindIndex".lower()
@@ -116,7 +117,7 @@ class TestESFind(NIOBlockTestCase):
             search_results['hits']['hits'][1]["_source"]["id_field"])
 
     @sleeping_test
-    def t1est_size_from_signal(self):
+    def test_size_from_signal(self):
         # execute an insertion
         insert_blk = ESInsert()
         index = "ESFindIndex".lower()
