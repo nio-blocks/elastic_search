@@ -3,14 +3,8 @@ from nio.common.block.base import Block
 from nio.metadata.properties import StringProperty, ExpressionProperty, \
     IntProperty
 from nio.common.command import command
-from nio.common.command.params.dict import DictParameter
-from nio.common.command.params.string import StringParameter
 
 
-@command("search",
-         StringParameter("doc_type", default=""),
-         DictParameter("body", default={}),
-         DictParameter("params", default={}))
 @command("connected")
 class ESBase(Block):
 
@@ -93,10 +87,3 @@ class ESBase(Block):
 
     def connected(self):
         return {'connected': self._es.ping()}
-
-    def search(self, doc_type, body=None, params=None):
-        doc_type = doc_type if doc_type else self.doc_type
-        body = body if body else {}
-        params = params if params else {}
-        return self._es.search(index=self.index, doc_type=doc_type,
-                               body=body, params=params)

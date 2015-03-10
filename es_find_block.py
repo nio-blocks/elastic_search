@@ -90,9 +90,12 @@ class ESFind(Limitable, Sortable, ESBase):
         condition = evaluate_expression(self.condition, signal)
         self._logger.debug("Condition evaluated to: {}".format(condition))
 
-        search_results = self.search(doc_type=doc_type,
-                                     body={"query": condition},
-                                     params=self.query_args(signal))
+        search_results = self._es.search(
+            index=self.index,
+            doc_type=doc_type,
+            body={"query": condition},
+            params=self.query_args(signal))
+
         if search_results and "hits" in search_results:
             return [Signal(self._process_fields(hit))
                     for hit in search_results['hits']['hits']]
