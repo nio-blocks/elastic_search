@@ -88,7 +88,6 @@ class ESBase(Block):
             return self.doc_type(signal)
         except:
             self._logger.exception("doc_type failed to evaluate")
-            raise
 
     def connected(self):
         return {'connected': self._es.ping()}
