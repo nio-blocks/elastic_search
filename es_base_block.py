@@ -1,5 +1,4 @@
 import logging
-
 from nio.common.block.base import Block
 from nio.metadata.properties import StringProperty, ExpressionProperty
 from nio.common.command import command
@@ -92,7 +91,7 @@ class ESBase(Block):
             raise
 
     def connected(self):
-        return self._es.ping()
+        return {'connected': self._es.ping()}
 
     def search(self, doc_type, body=None, params=None):
         doc_type = doc_type if doc_type else self.doc_type
