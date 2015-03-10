@@ -1,6 +1,7 @@
 import logging
 from nio.common.block.base import Block
-from nio.metadata.properties import StringProperty, ExpressionProperty
+from nio.metadata.properties import StringProperty, ExpressionProperty, \
+    IntProperty
 from nio.common.command import command
 from nio.common.command.params.dict import DictParameter
 from nio.common.command.params.string import StringParameter
@@ -20,6 +21,8 @@ class ESBase(Block):
         type (expression): The type of the document (equivalent to table)
 
     """
+    host = StringProperty(title='ES Host', default="127.0.0.1")
+    port = IntProperty(title='ES Port', default=9200)
     index = StringProperty(title='Index', default="nio")
     doc_type = ExpressionProperty(title='Type',
                                   default="{{($__class__.__name__)}}")
@@ -35,7 +38,7 @@ class ESBase(Block):
 
     def create_elastic_search_instance(self, context):
         from elasticsearch import Elasticsearch
-        return Elasticsearch()
+        return Elasticsearch([{'host': self.host, 'port': self.port}])
 
     def process_signals(self, signals, input_id='default'):
         output = []
