@@ -18,6 +18,7 @@ class Limitable():
     """
 
     size = ExpressionProperty(title='Size', default="")
+    offset = ExpressionProperty(title='Offset', default="")
 
     def query_args(self, signal=None):
         existing_args = super().query_args(signal)
@@ -27,21 +28,6 @@ class Limitable():
             # if size ends up being 0, discard parameter, thus use default
             if size:
                 existing_args['size'] = size
-        return existing_args
-
-
-class Offset():
-
-    """ A elasticsearch block mixin that allows you to offset results
-
-    An offset of zero would allow to return elements from the beginning,
-    subsequent searches could advance this offset
-    """
-
-    offset = ExpressionProperty(title='Offset', default="")
-
-    def query_args(self, signal=None):
-        existing_args = super().query_args(signal)
         offset = evaluate_expression(self.offset, signal, False)
         if offset:
             existing_args['from_'] = int(offset)
@@ -81,13 +67,13 @@ class Sortable():
             existing_args['sort'] = [
                 {key_field:
                     {"order": "asc"
-                    if order == SortDirection.ASCENDING.value else "desc"}}
+                     if order == SortDirection.ASCENDING.value else "desc"}}
                 for (key_field, order) in self._sort]
         return existing_args
 
 
 @Discoverable(DiscoverableType.block)
-class ESFind(Limitable, Sortable, Offset, ESBase):
+class ESFind(Limitable, Sortable, ESBase):
 
     """ A block for running `search` against a elasticsearch.
 
@@ -123,5 +109,5 @@ class ESFind(Limitable, Sortable, Offset, ESBase):
             dictionary with processes keys
         """
         d = {key if not key.startswith('_') else key[1:]: value
-             for key, value in elasticsearch_resulting_dict.items() }
+             for key, value in elasticsearch_resulting_dict.items()}
         return d
