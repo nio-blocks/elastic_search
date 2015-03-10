@@ -47,10 +47,9 @@ class ESBase(Block):
                     result = self.execute_query(doc_type, s)
                     if result:
                         output.extend(result)
-                except Exception as e:
+                except:
                     # If the execute call fails, we won't use this signal
-                    self._logger.error("Query failed: {}: {}".format(
-                        type(e).__name__, str(e)))
+                    self._logger.exception("Query failed")
                     continue
 
         # Check if we have anything to output
