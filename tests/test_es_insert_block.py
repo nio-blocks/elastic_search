@@ -3,7 +3,7 @@ import logging
 from nio.common.signal.base import Signal
 from nio.util.support.block_test_case import NIOBlockTestCase
 from ..es_insert_block import ESInsert
-from ..tests import elasticsearch_running, delete_elasticsearch_document
+from ..tests import elasticsearch_running, delete_elasticsearch_index
 
 
 class TestESInsert(NIOBlockTestCase):
@@ -17,13 +17,14 @@ class TestESInsert(NIOBlockTestCase):
 
     def test_search(self):
         blk = ESInsert()
+        index = "test_index"
         doc_type = "test_type"
 
         # make sure document doesn't exist
-        delete_elasticsearch_document(doc_type)
+        delete_elasticsearch_index(index)
 
         self.configure_block(blk, {
-            "index": "test_index",
+            "index": index,
             "doc_type": doc_type,
             "log_level": logging.DEBUG
         })
@@ -56,11 +57,12 @@ class TestESInsert(NIOBlockTestCase):
         blk = ESInsert()
         default_doc_type = "Signal"
 
+        index = "test_index"
         # make sure document doesn't exist
-        delete_elasticsearch_document(default_doc_type)
+        delete_elasticsearch_index(index)
 
         self.configure_block(blk, {
-            "index": "test_index",
+            "index": index,
             "log_level": logging.DEBUG
         })
         blk.start()

@@ -14,11 +14,13 @@ def elasticsearch_running():
     return True
 
 
-def delete_elasticsearch_document(document):
+def delete_elasticsearch_index(index):
     try:
         import requests
     except:
         return
 
-    url = "http://127.0.0.1:9200/{0}/".format(document)
-    requests.delete(url)
+    url = "http://127.0.0.1:9200/{0}/".format(index)
+    result = requests.delete(url)
+    from time import sleep
+    sleep(1)

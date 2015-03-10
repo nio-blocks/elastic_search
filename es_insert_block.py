@@ -1,6 +1,7 @@
 from .es_base_block import ESBase
 from nio.common.discovery import Discoverable, DiscoverableType
 from nio.metadata.properties.bool import BoolProperty
+from nio.common.signal.base import Signal
 
 
 @Discoverable(DiscoverableType.block)
@@ -21,4 +22,6 @@ class ESInsert(ESBase):
         self._logger.debug("Inserting {} to: {}, type: {}".
                            format(body, self.index, doc_type))
 
-        self._es.index(self.index, doc_type, body)
+        result = self._es.index(self.index, doc_type, body)
+        if result and "_id" in result:
+            return [Signal({'id': result["_id"]})]
