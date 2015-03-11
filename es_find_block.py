@@ -2,7 +2,7 @@ from enum import Enum
 
 from nio.common.discovery import Discoverable, DiscoverableType
 from nio.metadata.properties import ListProperty, SelectProperty, \
-    PropertyHolder, StringProperty, ExpressionProperty
+    PropertyHolder, StringProperty, ExpressionProperty, BoolProperty
 from nio.common.signal.base import Signal
 
 from .es_base_block import ESBase
@@ -81,6 +81,7 @@ class ESFind(Limitable, Sortable, ESBase):
     """
     condition = ExpressionProperty(
         title='Condition', default="{'match_all': {}}")
+    pretty_results = BoolProperty(title='Pretty Results', default=True)
 
     def execute_query(self, doc_type, signal):
         condition = evaluate_expression(self.condition, signal)
@@ -102,17 +103,26 @@ class ESFind(Limitable, Sortable, ESBase):
             return [Signal(self._process_fields(hit))
                     for hit in search_results['hits']['hits']]
 
-    def _process_fields(self, elasticsearch_resulting_dict):
+    def _process_fields(self, result_dict):
         """ elasticsearch return fields starting with underscore,
         and nio Signal would not consider them, therefore, remove
         underscore and let nio Signal grab them.
 
         Args:
-            elasticsearch_resulting_dict: dict as returned by elasticsearch
+            result_dict: dict as returned by elasticsearch
 
         Returns:
             dictionary with processes keys
         """
-        d = {key if not key.startswith('_') else key[1:]: value
-             for key, value in elasticsearch_resulting_dict.items()}
-        return d
+        if self.pretty_results and '_source' in result_dict:
+            # If they want pretty results, just give them the source
+            # which will likely represent a signal
+            result_dict = result_dict['_source']
+        else:
+            # No pretty results means give them everything, however, let's
+            # get rid of the leading underscores first
+            result_dict = {
+                key if not key.startswith('_') else key[1:]: value
+                for key, value in result_dict.items()}
+
+        return result_dict
