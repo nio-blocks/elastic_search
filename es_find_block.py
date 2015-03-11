@@ -30,13 +30,13 @@ class Limitable():
                 existing_args['size'] = size
         offset = evaluate_expression(self.offset, signal, False)
         if offset:
-            existing_args['from_'] = int(offset)
+            existing_args['from'] = int(offset)
         return existing_args
 
 
 class SortDirection(Enum):
-    DESCENDING = -1
-    ASCENDING = 1
+    DESCENDING = "desc"
+    ASCENDING = "asc"
 
 
 class Sort(PropertyHolder):
@@ -59,16 +59,12 @@ class Sortable():
     def configure(self, context):
         super().configure(context)
 
-        self._sort = [(s.key, s.direction.value) for s in self.sort]
+        self._sort = [{s.key: s.direction.value} for s in self.sort]
 
     def query_args(self, signal=None):
         existing_args = super().query_args(signal)
         if self._sort:
-            existing_args['sort'] = [
-                {key_field:
-                    {"order": "asc"
-                     if order == SortDirection.ASCENDING.value else "desc"}}
-                for (key_field, order) in self._sort]
+            existing_args['sort'] = self._sort
         return existing_args
 
 
@@ -83,18 +79,24 @@ class ESFind(Limitable, Sortable, ESBase):
         or be a parseable JSON string
 
     """
-    condition = ExpressionProperty(title='Condition',
-                                   default="{'match_all': {}}")
+    condition = ExpressionProperty(
+        title='Condition', default="{'match_all': {}}")
 
     def execute_query(self, doc_type, signal):
         condition = evaluate_expression(self.condition, signal)
         self._logger.debug("Condition evaluated to: {}".format(condition))
 
-        search_results = self._es.search(
-            index=self.index,
-            doc_type=doc_type,
-            body={"query": condition},
-            params=self.query_args(signal))
+        query_body = {"query": condition}
+        query_body.update(self.query_args(signal))
+
+        search_params = {
+            'index': self.index,
+            'doc_type': doc_type,
+            'body': query_body
+        }
+        self._logger.debug("Searching with params: {}".format(search_params))
+
+        search_results = self._es.search(**search_params)
 
         if search_results and "hits" in search_results:
             return [Signal(self._process_fields(hit))
