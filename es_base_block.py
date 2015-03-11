@@ -1,18 +1,11 @@
+import logging
 from nio.common.block.base import Block
-from nio.common.command.params.dict import DictParameter
-from nio.common.command.params.string import StringParameter
-from nio.metadata.properties.expression import ExpressionProperty
-from nio.metadata.properties.string import StringProperty
+from nio.metadata.properties import StringProperty, ExpressionProperty, \
+    IntProperty
 from nio.common.command import command
-from nio.common.discovery import Discoverable, DiscoverableType
 
 
-@command("search",
-         StringParameter("doc_type", default=""),
-         DictParameter("body", default={}),
-         DictParameter("params", default={}))
 @command("connected")
-@Discoverable(DiscoverableType.block)
 class ESBase(Block):
 
     """ A base block for Elasticsearch.
@@ -22,6 +15,8 @@ class ESBase(Block):
         type (expression): The type of the document (equivalent to table)
 
     """
+    host = StringProperty(title='ES Host', default="127.0.0.1")
+    port = IntProperty(title='ES Port', default=9200)
     index = StringProperty(title='Index', default="nio")
     doc_type = ExpressionProperty(title='Type',
                                   default="{{($__class__.__name__)}}")
@@ -32,44 +27,63 @@ class ESBase(Block):
 
     def configure(self, context):
         super().configure(context)
-        self._es = self.create_elastic_search_instance(context)
+        self._es = self.create_elastic_search_instance()
+        logging.getLogger('elasticsearch').setLevel(self.log_level.value)
 
-    def create_elastic_search_instance(self, context):
+    def create_elastic_search_instance(self):
         from elasticsearch import Elasticsearch
-        return Elasticsearch()
+        return Elasticsearch([{'host': self.host, 'port': self.port}])
 
     def process_signals(self, signals, input_id='default'):
+        output = []
         for s in signals:
-            try:
-                self._insert_signal(s)
-            except Exception as e:
-                # If the call fails, we won't use this signal
-                self._logger.error("Failed to insert signal: {}, details: {}".
-                                   format(s.to_dict(), str(e)))
+            doc_type = self._evaluate_doc_type(s)
+            self._logger.debug("doc_type evaluated to: {}".format(doc_type))
+            if doc_type:
+                try:
+                    result = self.execute_query(doc_type, s)
+                    if result and isinstance(result, list):
+                        output.extend(result)
+                except:
+                    # If the execute call fails, we won't use this signal
+                    self._logger.exception("Query failed")
+                    continue
+
+        # Check if we have anything to output
+        if output:
+            self.notify_signals(output)
+
+    def query_args(self, signal=None):
+        """ Query arguments to use in the ES query.
+
+        Returns:
+            args (dict): A dictionary of kwargs to pass to ES queries
+        """
+        return {}
+
+    def execute_query(self, doc_type, signal):
+        """ Run this block's query on the provided collection.
+
+        This should be overriden in the child blocks. It will be passed
+        a document type and a signal which caused the query to run.
+
+        If the block wishes, it may return a list of signals that will be
+        notified.
+
+        Params:
+            doc_type: The type of the document
+            signal (Signal): The signal which triggered the query
+
+        Returns:
+            signals (list): Any signals to notify
+        """
+        raise NotImplementedError()
 
     def _evaluate_doc_type(self, signal):
         try:
             return self.doc_type(signal)
-        except Exception as e:
-            self._logger.error("doc_type failed to evaluate, details: {0}".
-                               format(str(e)))
-            raise e
-
-    def _insert_signal(self, signal):
-        body = signal.to_dict()
-        doc_type = self._evaluate_doc_type(signal)
-
-        self._logger.debug("Inserting {} to: {}, type: {}".
-                           format(body, self.index, doc_type))
-
-        self._es.index(self.index, doc_type, body)
+        except:
+            self._logger.exception("doc_type failed to evaluate")
 
     def connected(self):
-        return self._es.ping()
-
-    def search(self, doc_type, body=None, params=None):
-        doc_type = doc_type if doc_type else self.doc_type
-        body = body if body else {}
-        params = params if params else {}
-        return self._es.search(index=self.index, doc_type=doc_type,
-                               body=body, params=params)
+        return {'connected': self._es.ping()}
