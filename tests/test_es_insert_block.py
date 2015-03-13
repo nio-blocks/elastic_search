@@ -5,6 +5,12 @@ from nio.util.support.block_test_case import NIOBlockTestCase
 
 from ..es_insert_block import ESInsert
 
+# The index method is what stores the signals. It should be called
+# with the following fields, in this order:
+#  - name of index
+#  - document type
+#  - signal body (dict)
+
 
 @patch('elasticsearch.Elasticsearch.index')
 class TestESInsert(NIOBlockTestCase):
@@ -27,70 +33,42 @@ class TestESInsert(NIOBlockTestCase):
             "doc_type": "doc_type_name"
         })
         blk.start()
-
         blk.process_signals([Signal({"field1": "1"})])
-
-        # The index method is what stores the signals. It should be called
-        # with the following fields, in this order:
-        #  - name of index
-        #  - document type
-        #  - signal body (dict)
         index_method.assert_called_once_with(
             "index_name", "doc_type_name", {"field1": "1"})
-
         blk.stop()
 
     def test_insert_called_default_vals(self, index_method):
         """ Tests the behavior of the block's default values """
         blk = ESInsert()
-
         self.configure_block(blk, {})
         blk.start()
-
         blk.process_signals([Signal({"field1": "1"})])
-
-        # The index method is what stores the signals. It should be called
-        # with the following fields, in this order:
-        #  - name of index (defaults to nio)
-        #  - document type (defaults to signal type "Signal")
-        #  - signal body (dict)
         index_method.assert_called_once_with(
             "nio", "Signal", {"field1": "1"})
-
         blk.stop()
 
     def test_insert_with_type(self, index_method):
         """ Tests that signals can get inserted with their signal types """
         blk = ESInsert()
-
         self.configure_block(blk, {
             "with_type": True,
             "index": "index_name",
             "doc_type": "doc_type_name"
         })
         blk.start()
-
         blk.process_signals([Signal({"field1": "1"})])
-
-        # The index method is what stores the signals. It should be called
-        # with the following fields, in this order:
-        #  - name of index
-        #  - document type
-        #  - signal body (dict)
         index_method.assert_called_once_with(
             "index_name", "doc_type_name", {
                 "field1": "1",
                 "_type": "nio.common.signal.base.Signal"
             })
-
         blk.stop()
 
     def test_index_return(self, index_method):
         """ Tests that insert calls can return the id of the insertion """
         blk = ESInsert()
-
         index_method.return_value = {"_id": "inserted_id"}
-
         self.configure_block(blk, {
             "with_type": True,
             "index": "index_name",
