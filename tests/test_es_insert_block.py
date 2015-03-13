@@ -6,6 +6,7 @@ from nio.util.support.block_test_case import NIOBlockTestCase
 from ..es_insert_block import ESInsert
 
 
+@patch('elasticsearch.Elasticsearch.index')
 class TestESInsert(NIOBlockTestCase):
 
     """ Tests elasticsearch block insert functionality """
@@ -17,7 +18,6 @@ class TestESInsert(NIOBlockTestCase):
     def signals_notified(self, signals, output_id='default'):
         self._signals_notified.extend(signals)
 
-    @patch('elasticsearch.Elasticsearch.index')
     def test_insert_called(self, index_method):
         """ Tests that inserts get called for each signal """
         blk = ESInsert()
@@ -40,7 +40,6 @@ class TestESInsert(NIOBlockTestCase):
 
         blk.stop()
 
-    @patch('elasticsearch.Elasticsearch.index')
     def test_insert_called_default_vals(self, index_method):
         """ Tests the behavior of the block's default values """
         blk = ESInsert()
@@ -60,7 +59,6 @@ class TestESInsert(NIOBlockTestCase):
 
         blk.stop()
 
-    @patch('elasticsearch.Elasticsearch.index')
     def test_insert_with_type(self, index_method):
         """ Tests that signals can get inserted with their signal types """
         blk = ESInsert()
@@ -87,7 +85,6 @@ class TestESInsert(NIOBlockTestCase):
 
         blk.stop()
 
-    @patch('elasticsearch.Elasticsearch.index')
     def test_index_return(self, index_method):
         """ Tests that insert calls can return the id of the insertion """
         blk = ESInsert()
