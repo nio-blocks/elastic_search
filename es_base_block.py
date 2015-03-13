@@ -28,7 +28,7 @@ class ESBase(Block):
     def configure(self, context):
         super().configure(context)
         self._es = self.create_elastic_search_instance()
-        logging.getLogger('elasticsearch').setLevel(self.log_level.value)
+        logging.getLogger('elasticsearch').setLevel(self._logger.logger.level)
 
     def create_elastic_search_instance(self):
         from elasticsearch import Elasticsearch
