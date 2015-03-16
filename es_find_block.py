@@ -22,15 +22,12 @@ class Limitable():
 
     def query_args(self, signal=None):
         existing_args = super().query_args(signal)
-
         size = self.size(signal)
-        if size:
-            # don't send size parameter if 0 is passed
-            existing_args['size'] = int(size)
-
         offset = self.offset(signal)
+        # Don't send size or offset if they are empty strings
+        if size:
+            existing_args['size'] = int(size)
         if offset:
-            # don't send offset parameter if 0 is passed
             existing_args['from'] = int(offset)
         return existing_args
 
