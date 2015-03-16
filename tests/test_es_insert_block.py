@@ -1,73 +1,83 @@
-import logging
+from unittest.mock import patch
 
 from nio.common.signal.base import Signal
 from nio.util.support.block_test_case import NIOBlockTestCase
+
 from ..es_insert_block import ESInsert
-from ..tests import elasticsearch_running, delete_elasticsearch_index
+
+# The index method is what stores the signals. It should be called
+# with the following fields, in this order:
+#  - name of index
+#  - document type
+#  - signal body (dict)
 
 
+@patch('elasticsearch.Elasticsearch.index')
 class TestESInsert(NIOBlockTestCase):
-    """ Tests elasticsearch block insert functionality provided by
-    ESInsert class
-    """
+
+    """ Tests elasticsearch block insert functionality """
 
     def setUp(self):
-        self._outcome.success = elasticsearch_running()
-        if self._outcome.success:
-            super().setUp()
+        super().setUp()
+        self._signals_notified = []
 
-    def test_search(self):
+    def signals_notified(self, signals, output_id='default'):
+        self._signals_notified.extend(signals)
+
+    def test_insert_called(self, index_method):
+        """ Tests that inserts get called for each signal """
         blk = ESInsert()
-        index = "test_index"
-        doc_type = "test_type"
-
-        # make sure document doesn't exist
-        delete_elasticsearch_index(index)
 
         self.configure_block(blk, {
-            "index": index,
-            "doc_type": doc_type,
-            "log_level": logging.DEBUG
+            "index": "index_name",
+            "doc_type": "doc_type_name"
         })
         blk.start()
         blk.process_signals([Signal({"field1": "1"})])
-        self._assert_hit(blk, doc_type)
-
+        index_method.assert_called_once_with(
+            "index_name", "doc_type_name", {"field1": "1"})
         blk.stop()
 
-    def _assert_hit(self, blk, doc_type):
-        # wait before asserting, it is possible that api wrapper
-        # executes the request asynchronously
-        from time import sleep
-        sleep(1)
-        search_results = blk.search(doc_type=doc_type,
-                                    body={"query": {"match_all": {}}},
-                                    params={"size": 10000})
-        self.assertIsNotNone(search_results)
-        self.assertIn('hits', search_results)
-        self.assertIn('hits', search_results['hits'])
-        self.assertGreater(len(search_results['hits']['hits']), 0)
-
-        doc_type_hits = 0
-        for hit in search_results['hits']['hits']:
-            if hit["_type"] == doc_type:
-                doc_type_hits += 1
-        self.assertGreater(doc_type_hits, 0)
-
-    def test_search_default_type(self):
+    def test_insert_called_default_vals(self, index_method):
+        """ Tests the behavior of the block's default values """
         blk = ESInsert()
-        default_doc_type = "Signal"
+        self.configure_block(blk, {})
+        blk.start()
+        blk.process_signals([Signal({"field1": "1"})])
+        index_method.assert_called_once_with(
+            "nio", "Signal", {"field1": "1"})
+        blk.stop()
 
-        index = "test_index"
-        # make sure document doesn't exist
-        delete_elasticsearch_index(index)
-
+    def test_insert_with_type(self, index_method):
+        """ Tests that signals can get inserted with their signal types """
+        blk = ESInsert()
         self.configure_block(blk, {
-            "index": index,
-            "log_level": logging.DEBUG
+            "with_type": True,
+            "index": "index_name",
+            "doc_type": "doc_type_name"
         })
         blk.start()
         blk.process_signals([Signal({"field1": "1"})])
-        self._assert_hit(blk, default_doc_type)
+        index_method.assert_called_once_with(
+            "index_name", "doc_type_name", {
+                "field1": "1",
+                "_type": "nio.common.signal.base.Signal"
+            })
+        blk.stop()
 
+    def test_index_return(self, index_method):
+        """ Tests that insert calls can return the id of the insertion """
+        blk = ESInsert()
+        index_method.return_value = {"_id": "inserted_id"}
+        self.configure_block(blk, {
+            "with_type": True,
+            "index": "index_name",
+            "doc_type": "doc_type_name"
+        })
+        blk.start()
+        blk.process_signals([Signal({"field1": "1"})])
+
+        # Assert one signal was notified and it has the inserted id in it
+        self.assert_num_signals_notified(1)
+        self.assertEqual(self._signals_notified[0].id, 'inserted_id')
         blk.stop()

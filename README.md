@@ -66,8 +66,8 @@ Properties
 --------------
 
 -   **condition**: Condition to filter data on
--   **size**: Number of elements to return
--   **offset**: Starting offset to use when returning data
+-   **size**: Number of elements to return (empty string to not include in query)
+-   **offset**: Starting offset to use when returning data (empty string to not include in query)
 -   **sort**: Sorting parameters if any
 
 Dependencies

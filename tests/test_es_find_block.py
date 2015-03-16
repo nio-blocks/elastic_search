@@ -1,243 +1,197 @@
-import logging
+from unittest.mock import patch
 
 from nio.common.signal.base import Signal
 from nio.util.support.block_test_case import NIOBlockTestCase
-from nio.util.unique import Unique
-from nio.util.support.fast_tests import sleeping_test
-from ..es_insert_block import ESInsert
+
 from ..es_find_block import ESFind
-from ..tests import elasticsearch_running, delete_elasticsearch_index
+
+# The search method is what searches an ES instance. It should be
+# called with the following fields, in this order:
+#  - index=name of index
+#  - doc_type=document type
+#  - body=query body (Should be wrapped in query, sort, size, and/or from)
 
 
+@patch('elasticsearch.Elasticsearch.search')
 class TestESFind(NIOBlockTestCase):
-    """ Tests elasticsearch block find functionality provided by
-    ESFind class
-    """
+
+    """ Tests elasticsearch block find functionality """
 
     def setUp(self):
-        self._outcome.success = elasticsearch_running()
-        if self._outcome.success:
-            super().setUp()
-
-    @sleeping_test
-    def test_find(self):
-        # execute an insertion
-        insert_blk = ESInsert()
-        index = "ESFindIndex".lower()
-        doc_type = "test_type"
-
-        # make sure document doesn't exist
-        delete_elasticsearch_index(index)
-
-        self.configure_block(insert_blk, {
-            "index": index,
-            "doc_type": doc_type,
-            "log_level": logging.DEBUG
-        })
-        insert_blk.start()
-        id_to_find = Unique.id()
-        signal = Signal({"id_field": id_to_find})
-        self._insert_signals(insert_blk, [signal])
-        self._assert_hit(insert_blk, doc_type)
-
-        self._es_find_signals_notified = []
-        # now create a find block and find just inserted item
-        find_blk = ESFind()
-        condition = '{"term": {"id_field": "{{$id_field}}"}}'
-        self.configure_block(find_blk, {
-            "index": index,
-            "doc_type": doc_type,
-            "condition": condition,
-            "log_level": logging.DEBUG
-        })
-        find_blk.start()
-        self._find_signals(find_blk, [signal])
-        self._assert_id_fields([id_to_find])
-
-        # insert another element
-        id2_to_find = Unique.id()
-        signal = Signal({"id_field": id2_to_find})
-        self._insert_signals(insert_blk, [signal])
-
-        # find again, it should pickup one since we are sending one signal
-        self._find_signals(find_blk, [signal])
-        self._assert_id_fields([id2_to_find])
-
-        insert_blk.stop()
-        find_blk.stop()
-
-    @sleeping_test
-    def test_size_and_offset(self):
-        # execute an insertion
-        insert_blk = ESInsert()
-        index = "ESFindIndex".lower()
-        doc_type = "test_type"
-
-        # make sure document doesn't exist
-        delete_elasticsearch_index(index)
-
-        self.configure_block(insert_blk, {
-            "index": index,
-            "doc_type": doc_type,
-            "log_level": logging.DEBUG
-        })
-        insert_blk.start()
-        id1 = Unique.id()
-        id2 = Unique.id()
-        id3 = Unique.id()
-        signal1 = Signal({"id_field": id1, "offset": 1})
-        signal2 = Signal({"id_field": id2, "offset": 1})
-        signal3 = Signal({"id_field": id3, "offset": 1})
-        all_signals = [signal1, signal2, signal3]
-        self._insert_signals(insert_blk, all_signals)
-        self._assert_hit(insert_blk, doc_type)
-
-        self._es_find_signals_notified = []
-        # now create a find block and do a find
-        find_blk = ESFind()
-        self.configure_block(find_blk, {
-            "size": 1,
-            "offset": "{{$offset}}",
-            "index": index,
-            "doc_type": doc_type,
-            "log_level": logging.DEBUG
-        })
-        find_blk.start()
-        self._find_signals(find_blk, [signal1])
-        self.assertEqual(len(self._es_find_signals_notified), 1)
-
-        search_results = find_blk.search(doc_type=doc_type,
-                                         body={"query": {"match_all": {}}},
-                                         params={"size": 10000})
-        self.assertEqual(len(search_results['hits']['hits']), 3)
-
-        # assert that it got the second one, since offset is 1
-        self.assertEqual(
-            self._es_find_signals_notified[0].source['id_field'],
-            search_results['hits']['hits'][1]["_source"]["id_field"])
-
-    @sleeping_test
-    def test_size_from_signal(self):
-        # execute an insertion
-        insert_blk = ESInsert()
-        index = "ESFindIndex".lower()
-        doc_type = "test_type"
-
-        # make sure document doesn't exist
-        delete_elasticsearch_index(index)
-
-        self.configure_block(insert_blk, {
-            "index": index,
-            "doc_type": doc_type,
-            "log_level": logging.DEBUG
-        })
-        insert_blk.start()
-        id1 = Unique.id()
-        id2 = Unique.id()
-        signal1 = Signal({"id_field": id1, "size": 0})
-        signal2 = Signal({"id_field": id2, "size": 1})
-        all_signals = [signal1, signal2]
-        self._insert_signals(insert_blk, all_signals)
-        self._assert_hit(insert_blk, doc_type)
-
-        self._es_find_signals_notified = []
-        # now create a find block and do a find
-        find_blk = ESFind()
-        self.configure_block(find_blk, {
-            "size": "{{$size}}",
-            "index": index,
-            "doc_type": doc_type,
-            "log_level": logging.DEBUG
-        })
-        find_blk.start()
-        # this signal's size evaluates to 0, meaning size parameter won't be
-        # added and find result will contain all signals inserted
-        self._find_signals(find_blk, [signal1])
-        self.assertEqual(len(self._es_find_signals_notified), 2)
-
-        # this signal's size evaluates to 1, meaning size parameter will be
-        # added and find result will contain one signal
-        self._find_signals(find_blk, [signal2])
-        self.assertEqual(len(self._es_find_signals_notified), 1)
-
-    @sleeping_test
-    def test_sort(self):
-        # execute an insertion
-        insert_blk = ESInsert()
-        index = "ESFindIndex".lower()
-        doc_type = "test_type"
-
-        # make sure document doesn't exist
-        delete_elasticsearch_index(index)
-
-        self.configure_block(insert_blk, {
-            "index": index,
-            "doc_type": doc_type,
-            "log_level": logging.DEBUG
-        })
-        insert_blk.start()
-        signal1 = Signal({"key_field": 5})
-        signal2 = Signal({"key_field": 1})
-        signal3 = Signal({"key_field": 3})
-        all_signals = [signal1, signal2, signal3]
-        self._insert_signals(insert_blk, all_signals)
-        self._assert_hit(insert_blk, doc_type)
-
-        self._es_find_signals_notified = []
-        # now create a find block and do a find
-        find_blk = ESFind()
-        self.configure_block(find_blk, {
-            "sort": [{"key": "key_field"}],
-            "index": index,
-            "doc_type": doc_type,
-            "log_level": logging.DEBUG
-        })
-        find_blk.start()
-        self._find_signals(find_blk, [signal1])
-        self.assertEqual(len(self._es_find_signals_notified), 3)
-
-        # TODO, test order, it is not taking effect (python elasticsearch?)
-
-
-    def _insert_signals(self, insert_blk, signals):
-        insert_blk.process_signals(signals)
-        from time import sleep
-        sleep(1)
-
-    def _find_signals(self, find_blk, signals):
-        # reset previous-find information
-        self._es_find_signals_notified = []
-        # perform new search
-        find_blk.process_signals(signals)
-
-    def _assert_id_fields(self, id_fields):
-
-        self.assertEqual(len(self._es_find_signals_notified), len(id_fields))
-        self.assertEqual(len(self._es_find_signals_notified[0].source),
-                         len(id_fields))
-        for id_field in id_fields:
-            self.assertEqual(
-                self._es_find_signals_notified[0].source['id_field'],
-                id_field)
-
-    def _assert_hit(self, blk, doc_type):
-        # wait before asserting, it looks like api wrapper
-        # executes the request asynchronously
-        search_results = blk.search(doc_type=doc_type,
-                                    body={"query": {"match_all": {}}},
-                                    params={"size": 10000})
-        self.assertIsNotNone(search_results)
-        self.assertIn('hits', search_results)
-        self.assertIn('hits', search_results['hits'])
-        self.assertGreater(len(search_results['hits']['hits']), 0)
-
-        doc_type_hits = 0
-        for hit in search_results['hits']['hits']:
-            if hit["_type"] == doc_type:
-                doc_type_hits += 1
-        self.assertGreater(doc_type_hits, 0)
+        super().setUp()
+        self._signals_notified = []
 
     def signals_notified(self, signals, output_id='default'):
-        print('signals_notified called with: {}'.format(len(signals)))
-        if hasattr(self, "_es_find_signals_notified"):
-            self._es_find_signals_notified.extend(signals)
+        self._signals_notified.extend(signals)
+
+    def test_normal_query_dict(self, search_method):
+        """ Tests that a normal query happens properly when given a dict """
+        blk = ESFind()
+        self.configure_block(blk, {
+            "index": "index_name",
+            "doc_type": "doc_type_name",
+            "condition": '{{ {"expr": $val} }}'
+        })
+        blk.start()
+        blk.process_signals([Signal({'val': '123'})])
+        search_method.assert_called_once_with(
+            index="index_name",
+            doc_type="doc_type_name",
+            body={"query": {"expr": "123"}})
+        blk.stop()
+
+    def test_normal_query_str(self, search_method):
+        """ Tests that a normal query happens properly when given a string """
+        blk = ESFind()
+        self.configure_block(blk, {
+            "index": "index_name",
+            "doc_type": "doc_type_name",
+            "condition": '{"expr": "{{ $val }}"}'
+        })
+        blk.start()
+        blk.process_signals([Signal({'val': '123'})])
+        search_method.assert_called_once_with(
+            index="index_name",
+            doc_type="doc_type_name",
+            body={"query": {"expr": "123"}})
+        blk.stop()
+
+    def test_sort_query(self, search_method):
+        """ Tests that a sorted query happens properly when given a dict """
+        blk = ESFind()
+        self.configure_block(blk, {
+            "index": "index_name",
+            "doc_type": "doc_type_name",
+            "sort": [{
+                "key": "sort_key",
+                "direction": "desc"
+            }],
+            'condition': '{{ {"expr": $val} }}'
+        })
+        blk.start()
+        blk.process_signals([Signal({'val': '123'})])
+        search_method.assert_called_once_with(
+            index="index_name",
+            doc_type="doc_type_name",
+            body={
+                "query": {"expr": "123"},
+                "sort": [{"sort_key": "desc"}]
+            })
+        blk.stop()
+
+    def test_limit_query(self, search_method):
+        """ Tests that a limited query happens properly when given a dict """
+        blk = ESFind()
+        self.configure_block(blk, {
+            "index": "index_name",
+            "doc_type": "doc_type_name",
+            "size": "10",
+            "offset": "5",
+            'condition': '{{ {"expr": $val} }}'
+        })
+        blk.start()
+        blk.process_signals([Signal({'val': '123'})])
+        search_method.assert_called_once_with(
+            index="index_name",
+            doc_type="doc_type_name",
+            body={
+                "query": {"expr": "123"},
+                "size": 10,
+                "from": 5
+            })
+        blk.stop()
+
+    def test_full_notify(self, search_method):
+        """ Tests that a full result set is notified """
+        blk = ESFind()
+        self.configure_block(blk, {
+            "index": "index_name",
+            "doc_type": "doc_type_name",
+            "condition": '{{ {"expr": $val} }}',
+            "pretty_results": False  # to get us the full result
+        })
+        blk.start()
+        # This is a snippet of a standard ES response
+        search_method.return_value = {
+            "hits": {
+                "hits": [{
+                    "_index": "index_name",
+                    "_source": {
+                        "result_key_1": "result_val_1"
+                    }
+                }]
+            }
+        }
+        blk.process_signals([Signal({'val': '123'})])
+        self.assert_num_signals_notified(1)
+        # We should still have the index information
+        # and it should have been renamed to remove the leading underscore
+        self.assertEqual(self._signals_notified[0].index, "index_name")
+        # We should also have the signal information, buried inside the
+        # "source" attribute
+        self.assertEqual(
+            self._signals_notified[0].source["result_key_1"], "result_val_1")
+        blk.stop()
+
+    def test_pretty_notify(self, search_method):
+        """ Tests that only the signal is notified if pretty results is on """
+        blk = ESFind()
+        self.configure_block(blk, {
+            "index": "index_name",
+            "doc_type": "doc_type_name",
+            "condition": '{{ {"expr": $val} }}',
+            "pretty_results": True  # to get us the pretty result
+        })
+        blk.start()
+        # This is a snippet of a standard ES response
+        search_method.return_value = {
+            "hits": {
+                "hits": [{
+                    "_index": "index_name",
+                    "_source": {
+                        "result_key_1": "result_val_1"
+                    }
+                }]
+            }
+        }
+        blk.process_signals([Signal({'val': '123'})])
+        self.assert_num_signals_notified(1)
+        # It should only be the "source" object that was notified
+        self.assertEqual(
+            self._signals_notified[0].result_key_1, "result_val_1")
+        blk.stop()
+
+    def test_multiple_notify(self, search_method):
+        """ Tests that multiple signals can be notified """
+        blk = ESFind()
+        self.configure_block(blk, {
+            "index": "index_name",
+            "doc_type": "doc_type_name",
+            "condition": '{{ {"expr": $val} }}'
+        })
+        blk.start()
+        # This is a snippet of a standard ES response
+        search_method.return_value = {
+            "hits": {
+                "hits": [{
+                    "_index": "index_name",
+                    "_source": {
+                        "result_key_1": "result_val_1"
+                    }
+                }, {
+                    "_index": "index_name",
+                    "_source": {
+                        "result_key_2": "result_val_2"
+                    }
+                }]
+            }
+        }
+        # Only one signal drives the query
+        blk.process_signals([Signal({'val': '123'})])
+        # but multiple results are returned
+        self.assert_num_signals_notified(2)
+        self.assertEqual(
+            self._signals_notified[0].result_key_1, "result_val_1")
+        self.assertEqual(
+            self._signals_notified[1].result_key_2, "result_val_2")
+        blk.stop()
