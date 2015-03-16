@@ -1,5 +1,5 @@
 import logging
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from nio.util.support.block_test_case import NIOBlockTestCase
 from nio.common.signal.base import Signal
@@ -7,6 +7,9 @@ from nio.common.signal.base import Signal
 from ..es_base_block import ESBase
 
 
+# Let's simulate that our execute query returns two signals/results
+@patch(ESBase.__module__ + '.ESBase.execute_query',
+       return_value=[Signal(), Signal()])
 class TestESBase(NIOBlockTestCase):
 
     """ Tests basic elasticsearch functionality provided by
@@ -14,7 +17,7 @@ class TestESBase(NIOBlockTestCase):
     """
 
     @patch('elasticsearch.Elasticsearch.ping')
-    def test_connected(self, ping_method):
+    def test_connected(self, ping_method, exec_method):
         blk = ESBase()
         self.configure_block(blk, {
             "log_level": "DEBUG"
@@ -22,14 +25,11 @@ class TestESBase(NIOBlockTestCase):
         blk.connected()
         ping_method.assertCalledOnceWith()
 
-    def test_query_execute_and_return(self):
+    def test_query_execute_and_return(self, exec_method):
         """ Test that if queries return signals they get notified """
         blk = ESBase()
         self.configure_block(blk, {})
         blk.start()
-
-        # Execute query will return a list of 2 signals
-        blk.execute_query = MagicMock(return_value=[Signal(), Signal()])
 
         # Send the block 3 signals
         blk.process_signals([Signal() for i in range(3)])
@@ -42,7 +42,7 @@ class TestESBase(NIOBlockTestCase):
         self.assert_num_signals_notified(6)
         blk.stop()
 
-    def test_sets_elastic_log_level(self):
+    def test_sets_elastic_log_level(self, exec_method):
         """ Tests that the elasticssearch logger inherits the log level """
         blk = ESBase()
         self.configure_block(blk, {
@@ -53,14 +53,14 @@ class TestESBase(NIOBlockTestCase):
         self.assertEqual(
             logging.getLogger('elasticsearch').level, logging.DEBUG)
 
-    def test_bad_query(self):
+    def test_bad_query(self, exec_method):
         """ Make sure that no signals get processed on a bad doc_type """
         blk = ESBase()
         self.configure_block(blk, {})
         blk.start()
 
         # Execute query will raise an exception
-        blk.execute_query = MagicMock(side_effect=Exception('bad query'))
+        exec_method.side_effect = Exception('bad query')
 
         blk.process_signals([Signal()])
 
@@ -70,10 +70,9 @@ class TestESBase(NIOBlockTestCase):
 
         blk.stop()
 
-    def test_bad_doctype(self):
+    def test_bad_doctype(self, exec_method):
         """ Make sure that no signals get processed on a bad doc_type """
         blk = ESBase()
-        blk.execute_query = MagicMock()
         self.configure_block(blk, {
             "doc_type": "{{1 + 'str'}}"
         })
