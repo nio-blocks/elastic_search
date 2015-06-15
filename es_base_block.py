@@ -1,8 +1,14 @@
 import logging
 from nio.common.block.base import Block
 from nio.metadata.properties import StringProperty, ExpressionProperty, \
-    IntProperty
+    IntProperty, BoolProperty, ObjectProperty, PropertyHolder
 from nio.common.command import command
+
+
+class AuthData(PropertyHolder):
+    username = StringProperty(title="Username", default="")
+    password = StringProperty(title="Password", default="")
+    use_https = BoolProperty(title="Use HTTPS?", default=False)
 
 
 @command("connected")
@@ -20,6 +26,7 @@ class ESBase(Block):
     index = StringProperty(title='Index', default="nio")
     doc_type = ExpressionProperty(title='Type',
                                   default="{{($__class__.__name__)}}")
+    auth = ObjectProperty(AuthData, title="Authentication")
 
     def __init__(self):
         super().__init__()
@@ -31,8 +38,21 @@ class ESBase(Block):
         logging.getLogger('elasticsearch').setLevel(self._logger.logger.level)
 
     def create_elastic_search_instance(self):
+        url = self.build_host_url()
+        self._logger.debug(
+            "Creating ElasticSearch instance for {}".format(url))
         from elasticsearch import Elasticsearch
-        return Elasticsearch([{'host': self.host, 'port': self.port}])
+        return Elasticsearch([url])
+
+    def build_host_url(self):
+        if self.auth.username:
+            return "{}://{}:{}@{}:{}/".format(
+                'https' if self.auth.use_https else 'http',
+                self.auth.username, self.auth.password, self.host, self.port)
+        else:
+            return "{}://{}:{}/".format(
+                'https' if self.auth.use_https else 'http',
+                self.host, self.port)
 
     def process_signals(self, signals, input_id='default'):
         output = []
