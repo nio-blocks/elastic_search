@@ -32,7 +32,10 @@ class ESBase(Block):
 
     def create_elastic_search_instance(self):
         from elasticsearch import Elasticsearch
-        return Elasticsearch([{'host': self.host, 'port': self.port}])
+        from elasticsearch.connection import RequestsHttpConnection
+        return Elasticsearch(
+            hosts=[{'host': self.host, 'port': self.port}],
+            transport=RequestsHttpConnection)
 
     def process_signals(self, signals, input_id='default'):
         output = []
