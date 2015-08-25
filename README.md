@@ -37,6 +37,9 @@ Properties
 --------------
 
 -   **with_type**: If True, includes the signal type in the document.
+-   **Signal Enrichment**:
+    - **Exclude Existing** (bool): Whether or not to exclude existing data. If this is checked, a new signal will be notified for every incoming signal. In other words, no data from the incoming signal will be included on the notified signal.
+    - **Results Field** (str): The attribute on the signal to store the results from this block. If this is empty, the results will be merged onto the incoming signal. This is the default operation. Having this field allows a block to "save" the results of an operation to a single field on an incoming signal and notify the enriched signal.
 
 Dependencies
 ----------------
