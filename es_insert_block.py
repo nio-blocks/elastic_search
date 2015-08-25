@@ -2,10 +2,11 @@ from .es_base_block import ESBase
 from nio.common.discovery import Discoverable, DiscoverableType
 from nio.metadata.properties.bool import BoolProperty
 from nio.common.signal.base import Signal
+from .mixins.enrich.enrich_signals import EnrichSignals
 
 
 @Discoverable(DiscoverableType.block)
-class ESInsert(ESBase):
+class ESInsert(EnrichSignals, ESBase):
 
     """ A block for recording signals or other such
     system-external store.
@@ -26,4 +27,5 @@ class ESInsert(ESBase):
 
         result = self._es.index(self.index, doc_type, body)
         if result and "_id" in result:
-            return [Signal({'id': result["_id"]})]
+            signal_data = {'id': result["_id"]}
+            return [self.get_output_signal(signal_data, signal)]
