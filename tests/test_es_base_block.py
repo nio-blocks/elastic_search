@@ -73,3 +73,32 @@ class TestESBase(NIOBlockTestCase):
         self.assert_num_signals_notified(0)
         self.assertEqual(blk.execute_query.call_count, 0)
         blk.stop()
+
+    @patch('elasticsearch.Elasticsearch')
+    def test_url_default(self, es, exec_method):
+        blk = ESBase()
+        self.configure_block(blk, {})
+        es.assert_called_once_with(['http://127.0.0.1:9200/'])
+
+    @patch('elasticsearch.Elasticsearch')
+    def test_url_auth(self, es, exec_method):
+        blk = ESBase()
+        self.configure_block(blk, {
+            "auth": {
+                "username": "user",
+                "password": "pwd"
+            }
+        })
+        es.assert_called_once_with(['http://user:pwd@127.0.0.1:9200/'])
+
+    @patch('elasticsearch.Elasticsearch')
+    def test_url_https_auth(self, es, exec_method):
+        blk = ESBase()
+        self.configure_block(blk, {
+            "auth": {
+                "username": "user",
+                "password": "pwd",
+                "use_https": True
+            }
+        })
+        es.assert_called_once_with(['https://user:pwd@127.0.0.1:9200/'])
