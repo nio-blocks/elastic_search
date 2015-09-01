@@ -42,7 +42,10 @@ class ESBase(Block):
         self._logger.debug(
             "Creating ElasticSearch instance for {}".format(url))
         from elasticsearch import Elasticsearch
-        return Elasticsearch([url])
+        from elasticsearch.connection import RequestsHttpConnection
+        return Elasticsearch(
+            hosts=[url],
+            transport=RequestsHttpConnection)
 
     def build_host_url(self):
         if self.auth.username:

@@ -75,25 +75,22 @@ class TestESBase(NIOBlockTestCase):
         blk.stop()
 
     @patch('elasticsearch.Elasticsearch')
-    def test_url_default(self, es, exec_method):
+    def test_elasticsearch_url(self, es, exec_method):
         blk = ESBase()
+        # With defaults
         self.configure_block(blk, {})
-        es.assert_called_once_with(['http://127.0.0.1:9200/'])
-
-    @patch('elasticsearch.Elasticsearch')
-    def test_url_auth(self, es, exec_method):
-        blk = ESBase()
+        self.assertEqual(['http://127.0.0.1:9200/'],
+                         es.call_args[1]['hosts'])
+        # With auth
         self.configure_block(blk, {
             "auth": {
                 "username": "user",
                 "password": "pwd"
             }
         })
-        es.assert_called_once_with(['http://user:pwd@127.0.0.1:9200/'])
-
-    @patch('elasticsearch.Elasticsearch')
-    def test_url_https_auth(self, es, exec_method):
-        blk = ESBase()
+        self.assertEqual(['http://user:pwd@127.0.0.1:9200/'],
+                         es.call_args[1]['hosts'])
+        # With https
         self.configure_block(blk, {
             "auth": {
                 "username": "user",
@@ -101,4 +98,5 @@ class TestESBase(NIOBlockTestCase):
                 "use_https": True
             }
         })
-        es.assert_called_once_with(['https://user:pwd@127.0.0.1:9200/'])
+        self.assertEqual(['https://user:pwd@127.0.0.1:9200/'],
+                         es.call_args[1]['hosts'])
