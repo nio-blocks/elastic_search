@@ -65,6 +65,35 @@ class TestESInsert(NIOBlockTestCase):
             })
         blk.stop()
 
+    def test_insert_with_index(self, index_method):
+        """ Tests that signals can get inserted with a dynamic index """
+        blk = ESInsert()
+        self.configure_block(blk, {
+            "with_type": True,
+            "index": "{{ $_index }}",
+            "doc_type": "doc_type_name"
+        })
+        blk.start()
+        blk.process_signals([Signal({"_index": "myindex"})])
+        index_method.assert_called_once_with(
+            "myindex", "doc_type_name", {
+                "_type": "nio.common.signal.base.Signal"
+            })
+        blk.stop()
+
+    def test_insert_with_bad_index(self, index_method):
+        """ Tests that signals are ignored with a bad index """
+        blk = ESInsert()
+        self.configure_block(blk, {
+            "with_type": True,
+            "index": "{{ $does_not_exist }}",
+            "doc_type": "doc_type_name"
+        })
+        blk.start()
+        blk.process_signals([Signal()])
+        self.assertFalse(index_method.called)
+        blk.stop()
+
     def test_index_return(self, index_method):
         """ Tests that insert calls can return the id of the insertion """
         blk = ESInsert()
