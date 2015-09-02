@@ -23,7 +23,7 @@ class ESBase(Block):
     """
     host = StringProperty(title='ES Host', default="127.0.0.1")
     port = IntProperty(title='ES Port', default=9200)
-    index = StringProperty(title='Index', default="nio")
+    index = ExpressionProperty(title='Index', default="nio")
     doc_type = ExpressionProperty(title='Type',
                                   default="{{($__class__.__name__)}}")
     auth = ObjectProperty(AuthData, title="Authentication")

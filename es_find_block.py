@@ -88,8 +88,17 @@ class ESFind(Limitable, Sortable, ESBase):
         query_body = {"query": condition}
         query_body.update(self.query_args(signal))
 
+        try:
+            index = self.index(signal)
+            if not index:
+                raise Exception("{} is an invalid index".format(index))
+        except:
+            self._logger.exception(
+                "Unable to determine index for {}".format(signal))
+            return []
+
         search_params = {
-            'index': self.index,
+            'index': index,
             'doc_type': doc_type,
             'body': query_body
         }

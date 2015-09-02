@@ -21,9 +21,18 @@ class ESInsert(ESBase):
 
     def execute_query(self, doc_type, signal):
         body = signal.to_dict(self.with_type)
-        self._logger.debug("Inserting {} to: {}, type: {}".
-                           format(body, self.index, doc_type))
+        try:
+            index = self.index(signal)
+            if not index:
+                raise Exception("{} is an invalid index".format(index))
+        except:
+            self._logger.exception(
+                "Unable to determine index for {}".format(signal))
+            return []
 
-        result = self._es.index(self.index, doc_type, body)
+        self._logger.debug("Inserting {} to: {}, type: {}".
+                           format(body, index, doc_type))
+
+        result = self._es.index(index, doc_type, body)
         if result and "_id" in result:
             return [Signal({'id': result["_id"]})]
