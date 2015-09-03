@@ -55,10 +55,30 @@ class TestESBase(NIOBlockTestCase):
         blk.start()
         # Execute query will raise an exception
         exec_method.side_effect = Exception('bad query')
+        # Set __name__ so Retry mixin can log it's warning
+        exec_method.__name__ = "execute_query"
         blk.process_signals([Signal()])
-        # Make sure no signals notified and one query execution still occurred
+        # Make sure no signals notified
         self.assert_num_signals_notified(0)
-        self.assertEqual(blk.execute_query.call_count, 1)
+        # Make sure 2 queries were attempted (1 for retry)
+        self.assertEqual(blk.execute_query.call_count, 2)
+        blk.stop()
+
+    def test_retry(self, exec_method):
+        """ Make sure that a succesful retry notifies a signal """
+        blk = ESBase()
+        self.configure_block(blk, {})
+        blk.start()
+        # Execute query will raise an exception the first time
+        # and then return one signal during the retry.
+        exec_method.side_effect = [Exception('bad query'), [Signal()]]
+        # Set __name__ so Retry mixin can log it's warning
+        exec_method.__name__ = "execute_query"
+        blk.process_signals([Signal()])
+        # Make sure a signal was notified from the retry
+        self.assert_num_signals_notified(1)
+        # Make sure 2 queries were attempted (1 for retry)
+        self.assertEqual(blk.execute_query.call_count, 2)
         blk.stop()
 
     def test_bad_doctype(self, exec_method):

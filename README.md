@@ -3,6 +3,8 @@ ESBase
 
 Provides base class for elasticsearch blocks.
 
+Each block defines a query to be executed. If that query fails then one retry will be attempted after first waiting one second. Only if this retry fails will the block log an error.
+
 Properties
 --------------
 

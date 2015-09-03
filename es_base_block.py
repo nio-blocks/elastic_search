@@ -3,6 +3,7 @@ from nio.common.block.base import Block
 from nio.metadata.properties import StringProperty, ExpressionProperty, \
     IntProperty, BoolProperty, ObjectProperty, PropertyHolder
 from nio.common.command import command
+from .mixins.retry.retry import Retry
 
 
 class AuthData(PropertyHolder):
@@ -12,7 +13,7 @@ class AuthData(PropertyHolder):
 
 
 @command("connected")
-class ESBase(Block):
+class ESBase(Retry, Block):
 
     """ A base block for Elasticsearch.
 
@@ -64,7 +65,8 @@ class ESBase(Block):
             self._logger.debug("doc_type evaluated to: {}".format(doc_type))
             if doc_type:
                 try:
-                    result = self.execute_query(doc_type, s)
+                    result = self._execute_with_retry(
+                        self.execute_query, doc_type=doc_type, signal=s)
                     if result and isinstance(result, list):
                         output.extend(result)
                 except:
