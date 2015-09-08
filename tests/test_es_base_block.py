@@ -7,12 +7,19 @@ from ..es_base_block import ESBase
 
 # Let's simulate that our execute query returns two signals/results
 @patch(ESBase.__module__ + '.ESBase.execute_query',
-       return_value=[Signal(), Signal()])
+       return_value=[{}, {}])
 class TestESBase(NIOBlockTestCase):
 
     """ Tests basic elasticsearch functionality provided by
     ESBase class
     """
+
+    def setUp(self):
+        super().setUp()
+        self._signals_notified = []
+
+    def signals_notified(self, signals, output_id='default'):
+        self._signals_notified.extend(signals)
 
     @patch('elasticsearch.Elasticsearch.ping')
     def test_connected(self, ping_method, exec_method):
@@ -100,3 +107,41 @@ class TestESBase(NIOBlockTestCase):
         })
         self.assertEqual(['https://user:pwd@127.0.0.1:9200/'],
                          es.call_args[1]['hosts'])
+
+    def test_enrich_signals_merge(self, exec_method):
+        """ Tests enrich signals """
+        exec_method.return_value = [{'result': 'value'}]
+        blk = ESBase()
+        self.configure_block(blk, {
+            "index": "index_name",
+            "doc_type": "doc_type_name",
+            "enrich": {"exclude_existing": False}
+        })
+        blk.start()
+        blk.process_signals([Signal({"field1": "1"})])
+        # Assert one signal was notified and it has the mocked value in it
+        self.assert_num_signals_notified(1)
+        self.assertDictEqual(self._signals_notified[0].to_dict(),
+                             {"field1": "1",
+                              "result": "value"})
+        blk.stop()
+
+    def test_enrich_signals_field(self, exec_method):
+        """ Tests enrich signals """
+        exec_method.return_value = [{'result': 'value'}]
+        blk = ESBase()
+        self.configure_block(blk, {
+            "with_type": True,
+            "index": "index_name",
+            "doc_type": "doc_type_name",
+            "enrich": {"exclude_existing": False,
+                       "enrich_field": "result"}
+        })
+        blk.start()
+        blk.process_signals([Signal({"field1": "1"})])
+        # Assert one signal was notified and it has the inserted id in it
+        self.assert_num_signals_notified(1)
+        self.assertDictEqual(self._signals_notified[0].to_dict(),
+                             {"field1": "1",
+                              "result": {"result": "value"}})
+        blk.stop()
