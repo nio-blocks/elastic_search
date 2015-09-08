@@ -145,3 +145,41 @@ class TestESBase(NIOBlockTestCase):
                              {"field1": "1",
                               "result": {"result": "value"}})
         blk.stop()
+
+    def test_enrich_signals_merge(self, exec_method):
+        """ Tests enrich signals """
+        exec_method.return_value = [{'result': 'value'}]
+        blk = ESBase()
+        self.configure_block(blk, {
+            "index": "index_name",
+            "doc_type": "doc_type_name",
+            "enrich": {"exclude_existing": False}
+        })
+        blk.start()
+        blk.process_signals([Signal({"field1": "1"})])
+        # Assert one signal was notified and it has the mocked value in it
+        self.assert_num_signals_notified(1)
+        self.assertDictEqual(self._signals_notified[0].to_dict(),
+                             {"field1": "1",
+                              "result": "value"})
+        blk.stop()
+
+    def test_enrich_signals_field(self, exec_method):
+        """ Tests enrich signals """
+        exec_method.return_value = [{'result': 'value'}]
+        blk = ESBase()
+        self.configure_block(blk, {
+            "with_type": True,
+            "index": "index_name",
+            "doc_type": "doc_type_name",
+            "enrich": {"exclude_existing": False,
+                       "enrich_field": "result"}
+        })
+        blk.start()
+        blk.process_signals([Signal({"field1": "1"})])
+        # Assert one signal was notified and it has the inserted id in it
+        self.assert_num_signals_notified(1)
+        self.assertDictEqual(self._signals_notified[0].to_dict(),
+                             {"field1": "1",
+                              "result": {"result": "value"}})
+        blk.stop()
