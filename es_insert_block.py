@@ -1,6 +1,6 @@
 from .es_base_block import ESBase
 from nio.common.discovery import Discoverable, DiscoverableType
-from nio.metadata.properties.bool import BoolProperty
+from nio.metadata.properties import BoolProperty, VersionProperty
 
 
 @Discoverable(DiscoverableType.block)
@@ -13,6 +13,7 @@ class ESInsert(ESBase):
         with_type (str): include the signal type in the record?
 
     """
+    version = VersionProperty('1.0.0')
     with_type = BoolProperty(
         title='Include the type of logged signals?',
         default=False,
