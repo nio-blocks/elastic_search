@@ -4,6 +4,7 @@ from nio.metadata.properties import StringProperty, ExpressionProperty, \
     IntProperty, BoolProperty, ObjectProperty, PropertyHolder
 from nio.common.command import command
 from .mixins.retry.retry import Retry
+from .mixins.enrich.enrich_signals import EnrichSignals
 
 
 class AuthData(PropertyHolder):
@@ -13,7 +14,7 @@ class AuthData(PropertyHolder):
 
 
 @command("connected")
-class ESBase(Retry, Block):
+class ESBase(Retry, EnrichSignals, Block):
 
     """ A base block for Elasticsearch.
 
@@ -67,8 +68,11 @@ class ESBase(Retry, Block):
                 try:
                     result = self._execute_with_retry(
                         self.execute_query, doc_type=doc_type, signal=s)
+                    # Expect execute_query to return a dictionary for a signal,
+                    # we will enrich according to configuration here
                     if result and isinstance(result, list):
-                        output.extend(result)
+                        output.extend([self.get_output_signal(res, s)
+                                       for res in result])
                 except:
                     # If the execute call fails, we won't use this signal
                     self._logger.exception("Query failed")
