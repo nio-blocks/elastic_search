@@ -3,10 +3,11 @@ from nio.common.block.base import Block
 from nio.metadata.properties import StringProperty, ExpressionProperty, \
     IntProperty
 from nio.common.command import command
+from .mixins.enrich.enrich_signals import EnrichSignals
 
 
 @command("connected")
-class ESBase(Block):
+class ESBase(EnrichSignals, Block):
 
     """ A base block for Elasticsearch.
 
@@ -45,8 +46,12 @@ class ESBase(Block):
             if doc_type:
                 try:
                     result = self.execute_query(doc_type, s)
+
+                    # Expect execute_query to return a dictionary for a signal,
+                    # we will enrich according to configuration here
                     if result and isinstance(result, list):
-                        output.extend(result)
+                        output.extend([self.get_output_signal(res, s)
+                                       for res in result])
                 except:
                     # If the execute call fails, we won't use this signal
                     self._logger.exception("Query failed")
