@@ -3,7 +3,6 @@ from enum import Enum
 from nio.common.discovery import Discoverable, DiscoverableType
 from nio.metadata.properties import ListProperty, SelectProperty, \
     PropertyHolder, StringProperty, ExpressionProperty, BoolProperty
-from nio.common.signal.base import Signal
 
 from .es_base_block import ESBase
 from . import evaluate_expression
@@ -98,7 +97,7 @@ class ESFind(Limitable, Sortable, ESBase):
         search_results = self._es.search(**search_params)
 
         if search_results and "hits" in search_results:
-            return [Signal(self._process_fields(hit))
+            return [self._process_fields(hit)
                     for hit in search_results['hits']['hits']]
 
     def _process_fields(self, result_dict):
