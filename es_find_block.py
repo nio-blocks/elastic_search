@@ -2,7 +2,8 @@ from enum import Enum
 
 from nio.common.discovery import Discoverable, DiscoverableType
 from nio.metadata.properties import ListProperty, SelectProperty, \
-    PropertyHolder, StringProperty, ExpressionProperty, BoolProperty
+    PropertyHolder, StringProperty, ExpressionProperty, BoolProperty, \
+    VersionProperty
 
 from .es_base_block import ESBase
 from . import evaluate_expression
@@ -76,6 +77,7 @@ class ESFind(Limitable, Sortable, ESBase):
         or be a parseable JSON string
 
     """
+    version = VersionProperty('1.0.0')
     condition = ExpressionProperty(
         title='Condition', default="{'match_all': {}}")
     pretty_results = BoolProperty(title='Pretty Results', default=True)
