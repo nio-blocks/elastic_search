@@ -1,3 +1,4 @@
+import json
 import logging
 from nio.common.block.base import Block
 from nio.metadata.properties import StringProperty, ExpressionProperty, \
@@ -47,15 +48,7 @@ class ESBase(Retry, EnrichSignals, Block):
             "Creating ElasticSearch instance for {}".format(url))
         from elasticsearch import Elasticsearch
         from elasticsearch.connection import RequestsHttpConnection
-        kwargs = {'hosts': [url]}
-        if self.elasticsearch_client_kwargs is not None:
-            if isinstance(self.elasticsearch_client_kwargs, dict):
-                kwargs.update(self.elasticsearch_client_kwargs)
-            else:
-                self._logger.warning(
-                    "Client Arguments needs to be a dictionary: {}".format(
-                        self.elasticsearch_client_kwargs))
-        return Elasticsearch(**kwargs)
+        return Elasticsearch(**self._build_elasticsearch_client_kwargs(url))
 
     def build_host_url(self):
         if self.auth.username:
@@ -66,6 +59,20 @@ class ESBase(Retry, EnrichSignals, Block):
             return "{}://{}:{}/".format(
                 'https' if self.auth.use_https else 'http',
                 self.host, self.port)
+
+    def _build_elasticsearch_client_kwargs(self, url):
+        kwargs = {'hosts': [url]}
+        client_kwargs = self.elasticsearch_client_kwargs
+        if client_kwargs is not None:
+            try:
+                if isinstance(client_kwargs, str):
+                    client_kwargs = json.loads(client_kwargs)
+                kwargs.update(client_kwargs)
+            except:
+                self._logger.warning(
+                    "Client Arguments needs to be a dictionary: {}".format(
+                        self.elasticsearch_client_kwargs), exc_info=True)
+        return kwargs
 
     def process_signals(self, signals, input_id='default'):
         output = []
