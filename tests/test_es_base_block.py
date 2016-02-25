@@ -102,6 +102,19 @@ class TestESBase(NIOBlockTestCase):
         blk.stop()
 
     @patch('elasticsearch.Elasticsearch')
+    def test_elasticsearch_client_kwargs(self, es, exec_method):
+        """Elasticsearch client is instantiated with configured kwargs."""
+        blk = ESBase()
+        self.configure_block(blk, {
+            "elasticsearch_client_kwargs": {"maxsize": 10}})
+        self.assertDictEqual({
+            # hosts is always used
+            "hosts": ["http://127.0.0.1:9200/"],
+            # maxsize comes from elasticsearch_client_kwargs property
+            "maxsize": 10
+        }, es.call_args[1])
+
+    @patch('elasticsearch.Elasticsearch')
     def test_elasticsearch_url(self, es, exec_method):
         blk = ESBase()
         # With defaults

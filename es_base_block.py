@@ -1,7 +1,7 @@
 import logging
 from nio.common.block.base import Block
 from nio.metadata.properties import StringProperty, ExpressionProperty, \
-    IntProperty, BoolProperty, ObjectProperty, PropertyHolder
+    IntProperty, BoolProperty, ObjectProperty, PropertyHolder, VarProperty
 from nio.common.command import command
 from .mixins.retry.retry import Retry
 from .mixins.enrich.enrich_signals import EnrichSignals
@@ -29,6 +29,8 @@ class ESBase(Retry, EnrichSignals, Block):
     doc_type = ExpressionProperty(title='Type',
                                   default="{{($__class__.__name__)}}")
     auth = ObjectProperty(AuthData, title="Authentication")
+    elasticsearch_client_kwargs = VarProperty(title='Client Argurments',
+                                             default=None, allow_none=True)
 
     def __init__(self):
         super().__init__()
@@ -45,9 +47,15 @@ class ESBase(Retry, EnrichSignals, Block):
             "Creating ElasticSearch instance for {}".format(url))
         from elasticsearch import Elasticsearch
         from elasticsearch.connection import RequestsHttpConnection
-        return Elasticsearch(
-            hosts=[url],
-            transport=RequestsHttpConnection)
+        kwargs = {'hosts': [url]}
+        if self.elasticsearch_client_kwargs is not None:
+            if isinstance(self.elasticsearch_client_kwargs, dict):
+                kwargs.update(self.elasticsearch_client_kwargs)
+            else:
+                self._logger.warning(
+                    "Client Arguments needs to be a dictionary: {}".format(
+                        self.elasticsearch_client_kwargs))
+        return Elasticsearch(**kwargs)
 
     def build_host_url(self):
         if self.auth.username:
