@@ -10,6 +10,7 @@ Properties
 
 -   **index**: The name of the index (equivalent to database)
 -   **doc_type**: The type of the document (equivalent to table)
+-   **elasticsearch_client_kwargs**: kwargs to be passed to [elasticsearch client](http://elasticsearch-py.readthedocs.org/en/latest/api.html#elasticsearch). example configuration: {"maxsize": 15"}
 
 Dependencies
 ----------------

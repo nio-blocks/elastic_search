@@ -1,7 +1,8 @@
+import json
 import logging
 from nio.common.block.base import Block
 from nio.metadata.properties import StringProperty, ExpressionProperty, \
-    IntProperty, BoolProperty, ObjectProperty, PropertyHolder
+    IntProperty, BoolProperty, ObjectProperty, PropertyHolder, VarProperty
 from nio.common.command import command
 from .mixins.retry.retry import Retry
 from .mixins.enrich.enrich_signals import EnrichSignals
@@ -29,6 +30,8 @@ class ESBase(Retry, EnrichSignals, Block):
     doc_type = ExpressionProperty(title='Type',
                                   default="{{($__class__.__name__)}}")
     auth = ObjectProperty(AuthData, title="Authentication")
+    elasticsearch_client_kwargs = VarProperty(title='Client Argurments',
+                                             default=None, allow_none=True)
 
     def __init__(self):
         super().__init__()
@@ -45,9 +48,7 @@ class ESBase(Retry, EnrichSignals, Block):
             "Creating ElasticSearch instance for {}".format(url))
         from elasticsearch import Elasticsearch
         from elasticsearch.connection import RequestsHttpConnection
-        return Elasticsearch(
-            hosts=[url],
-            transport=RequestsHttpConnection)
+        return Elasticsearch(**self._build_elasticsearch_client_kwargs(url))
 
     def build_host_url(self):
         if self.auth.username:
@@ -58,6 +59,20 @@ class ESBase(Retry, EnrichSignals, Block):
             return "{}://{}:{}/".format(
                 'https' if self.auth.use_https else 'http',
                 self.host, self.port)
+
+    def _build_elasticsearch_client_kwargs(self, url):
+        kwargs = {'hosts': [url]}
+        client_kwargs = self.elasticsearch_client_kwargs
+        if client_kwargs is not None:
+            try:
+                if isinstance(client_kwargs, str):
+                    client_kwargs = json.loads(client_kwargs)
+                kwargs.update(client_kwargs)
+            except:
+                self._logger.warning(
+                    "Client Arguments needs to be a dictionary: {}".format(
+                        self.elasticsearch_client_kwargs), exc_info=True)
+        return kwargs
 
     def process_signals(self, signals, input_id='default'):
         output = []
