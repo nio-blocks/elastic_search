@@ -1,8 +1,7 @@
 from unittest.mock import patch
-
-from nio.common.signal.base import Signal
-from nio.util.support.block_test_case import NIOBlockTestCase
-
+from nio.block.terminals import DEFAULT_TERMINAL
+from nio.signal.base import Signal
+from nio.testing.block_test_case import NIOBlockTestCase
 from ..es_find_block import ESFind
 
 # The search method is what searches an ES instance. It should be
@@ -16,13 +15,6 @@ from ..es_find_block import ESFind
 class TestESFind(NIOBlockTestCase):
 
     """ Tests elasticsearch block find functionality """
-
-    def setUp(self):
-        super().setUp()
-        self._signals_notified = []
-
-    def signals_notified(self, signals, output_id='default'):
-        self._signals_notified.extend(signals)
 
     def test_normal_query_dict(self, search_method):
         """ Tests that a normal query happens properly when given a dict """
@@ -126,11 +118,13 @@ class TestESFind(NIOBlockTestCase):
         self.assert_num_signals_notified(1)
         # We should still have the index information
         # and it should have been renamed to remove the leading underscore
-        self.assertEqual(self._signals_notified[0].index, "index_name")
+        self.assertEqual(
+            self.last_notified[DEFAULT_TERMINAL][0].index, "index_name")
         # We should also have the signal information, buried inside the
         # "source" attribute
         self.assertEqual(
-            self._signals_notified[0].source["result_key_1"], "result_val_1")
+            self.last_notified[DEFAULT_TERMINAL][0].source["result_key_1"],
+            "result_val_1")
         blk.stop()
 
     def test_pretty_notify(self, search_method):
@@ -157,8 +151,9 @@ class TestESFind(NIOBlockTestCase):
         blk.process_signals([Signal({'val': '123'})])
         self.assert_num_signals_notified(1)
         # It should only be the "source" object that was notified
-        self.assertEqual(
-            self._signals_notified[0].result_key_1, "result_val_1")
+        self.assertDictEqual(
+            {"result_key_1": "result_val_1"},
+            self.last_notified[DEFAULT_TERMINAL][0].__dict__)
         blk.stop()
 
     def test_multiple_notify(self, search_method):
@@ -191,7 +186,7 @@ class TestESFind(NIOBlockTestCase):
         # but multiple results are returned
         self.assert_num_signals_notified(2)
         self.assertEqual(
-            self._signals_notified[0].result_key_1, "result_val_1")
+            self.last_notified[DEFAULT_TERMINAL][0].result_key_1, "result_val_1")
         self.assertEqual(
-            self._signals_notified[1].result_key_2, "result_val_2")
+            self.last_notified[DEFAULT_TERMINAL][1].result_key_2, "result_val_2")
         blk.stop()

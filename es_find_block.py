@@ -1,11 +1,11 @@
 from enum import Enum
 
-from nio.common.discovery import Discoverable, DiscoverableType
-from nio.metadata.properties import ListProperty, SelectProperty, \
-    PropertyHolder, StringProperty, ExpressionProperty, BoolProperty, \
+from nio.util.discovery import discoverable
+from nio.properties import ListProperty, SelectProperty, \
+    PropertyHolder, StringProperty, Property, BoolProperty, \
     VersionProperty
 
-from .es_base_block import ESBase
+from .es_base import ESBase
 from . import evaluate_expression
 
 
@@ -17,8 +17,8 @@ class Limitable():
     retrieved, subsequent calls can include a specific limit and an offset
     """
 
-    size = ExpressionProperty(title='Size', default="")
-    offset = ExpressionProperty(title='Offset', default="")
+    size = Property(title='Size', default="")
+    offset = Property(title='Offset', default="")
 
     def query_args(self, signal=None):
         existing_args = super().query_args(signal)
@@ -48,7 +48,7 @@ class Sortable():
 
     """ A elasticsearch block mixin that allows you to sort results """
 
-    sort = ListProperty(Sort, title='Sort')
+    sort = ListProperty(Sort, title='Sort', default=[])
 
     def __init__(self):
         super().__init__()
@@ -57,7 +57,7 @@ class Sortable():
     def configure(self, context):
         super().configure(context)
 
-        self._sort = [{s.key: s.direction.value} for s in self.sort]
+        self._sort = [{s.key(): s.direction().value} for s in self.sort()]
 
     def query_args(self, signal=None):
         existing_args = super().query_args(signal)
@@ -66,7 +66,7 @@ class Sortable():
         return existing_args
 
 
-@Discoverable(DiscoverableType.block)
+@discoverable
 class ESFind(Limitable, Sortable, ESBase):
 
     """ A block for running `search` against a elasticsearch.
@@ -78,13 +78,13 @@ class ESFind(Limitable, Sortable, ESBase):
 
     """
     version = VersionProperty('1.0.0')
-    condition = ExpressionProperty(
+    condition = Property(
         title='Condition', default="{'match_all': {}}")
     pretty_results = BoolProperty(title='Pretty Results', default=True)
 
     def execute_query(self, doc_type, signal):
         condition = evaluate_expression(self.condition, signal)
-        self._logger.debug("Condition evaluated to: {}".format(condition))
+        self.logger.debug("Condition evaluated to: {}".format(condition))
 
         query_body = {"query": condition}
         query_body.update(self.query_args(signal))
@@ -94,7 +94,7 @@ class ESFind(Limitable, Sortable, ESBase):
             if not index:
                 raise Exception("{} is an invalid index".format(index))
         except:
-            self._logger.exception(
+            self.logger.exception(
                 "Unable to determine index for {}".format(signal))
             return []
 
@@ -103,7 +103,7 @@ class ESFind(Limitable, Sortable, ESBase):
             'doc_type': doc_type,
             'body': query_body
         }
-        self._logger.debug("Searching with params: {}".format(search_params))
+        self.logger.debug("Searching with params: {}".format(search_params))
 
         search_results = self._es.search(**search_params)
 
@@ -122,7 +122,7 @@ class ESFind(Limitable, Sortable, ESBase):
         Returns:
             dictionary with processes keys
         """
-        if self.pretty_results and '_source' in result_dict:
+        if self.pretty_results() and '_source' in result_dict:
             # If they want pretty results, just give them the source
             # which will likely represent a signal
             result_dict = result_dict['_source']

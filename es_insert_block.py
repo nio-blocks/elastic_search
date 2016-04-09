@@ -1,9 +1,9 @@
-from .es_base_block import ESBase
-from nio.common.discovery import Discoverable, DiscoverableType
-from nio.metadata.properties import BoolProperty, VersionProperty
+from .es_base import ESBase
+from nio.util.discovery import discoverable
+from nio.properties import BoolProperty, VersionProperty
 
 
-@Discoverable(DiscoverableType.block)
+@discoverable
 class ESInsert(ESBase):
 
     """ A block for recording signals or other such
@@ -20,17 +20,21 @@ class ESInsert(ESBase):
         visible=False)
 
     def execute_query(self, doc_type, signal):
-        body = signal.to_dict(self.with_type)
+        if self.with_type():
+            with_type = "_type"
+        else:
+            with_type = None
+        body = signal.to_dict(with_type=with_type)
         try:
             index = self.index(signal)
             if not index:
                 raise Exception("{} is an invalid index".format(index))
         except:
-            self._logger.exception(
+            self.logger.exception(
                 "Unable to determine index for {}".format(signal))
             return []
 
-        self._logger.debug("Inserting {} to: {}, type: {}".
+        self.logger.debug("Inserting {} to: {}, type: {}".
                            format(body, index, doc_type))
 
         result = self._es.index(index, doc_type, body)
