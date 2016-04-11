@@ -7,7 +7,8 @@ from nio.properties import StringProperty, Property, \
 from nio.command import command
 from nio.block.mixins.retry.retry import Retry
 from nio.block.mixins.retry.strategy import BackoffStrategy
-from nio.block.mixins.enrich.enrich_signals import EnrichSignals
+from nio.block.mixins.enrich.enrich_signals import EnrichSignals, \
+    EnrichProperties
 
 
 class SleepBackoffStrategy(BackoffStrategy):
@@ -46,6 +47,9 @@ class ESBase(Retry, EnrichSignals, Block):
     auth = ObjectProperty(AuthData, title="Authentication", default=AuthData())
     elasticsearch_client_kwargs = Property(title='Client Argurments',
                                            default=None, allow_none=True)
+    # TODO: remove this when nio framework is fixed
+    enrich = ObjectProperty(EnrichProperties, title='Signal Enrichment',
+                            default=EnrichProperties())
 
     def __init__(self):
         super().__init__()

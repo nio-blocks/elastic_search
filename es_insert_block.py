@@ -13,7 +13,7 @@ class ESInsert(ESBase):
         with_type (str): include the signal type in the record?
 
     """
-    version = VersionProperty('1.0.0')
+    version = VersionProperty('0.1.0')
     with_type = BoolProperty(
         title='Include the type of logged signals?',
         default=False,
