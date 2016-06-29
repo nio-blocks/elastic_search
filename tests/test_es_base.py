@@ -196,3 +196,17 @@ class TestESBase(NIOBlockTestCase):
             {"field1": "1", "result": {"result": "value"}},
             self.last_notified[DEFAULT_TERMINAL][0].__dict__)
         blk.stop()
+
+    def test_empty_client_args(self, exec_method):
+        blk = ESBase()
+        self.configure_block(blk, {
+            "index": "index_name",
+            "doc_type": "doc_type_name",
+            "enrich": {"exclude_existing": False}
+            "elasticsearch_client_kwargs":
+            })
+            blk.start()
+            blk.process_signals([Signal({"field1": "1"})])
+            blk.stop()
+
+

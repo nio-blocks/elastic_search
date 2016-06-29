@@ -82,7 +82,7 @@ class ESBase(Retry, EnrichSignals, Block):
 
     def _build_elasticsearch_client_kwargs(self, url):
         kwargs = {'hosts': [url]}
-        client_kwargs = self.elasticsearch_client_kwargs()
+        client_kwargs = self.elasticsearch_client_kwargs() or {}
         if client_kwargs is not None:
             try:
                 if isinstance(client_kwargs, str):
