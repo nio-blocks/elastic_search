@@ -131,6 +131,19 @@ class TestESBase(NIOBlockTestCase):
             # not called with any additional kwargs
             "hosts": ["http://127.0.0.1:9200/"]
         }, es.call_args[1])
+        # TODO: assert that blk.logger.warning is called
+
+    @patch('elasticsearch.Elasticsearch')
+    def test_empty_client_kwargs(self, es, exec_method):
+        """kwargs that is an empty string should not log a warning."""
+        blk = ESBase()
+        self.configure_block(blk, {
+            "elasticsearch_client_kwargs": ''})
+        self.assertDictEqual({
+            # not called with any additional kwargs
+            "hosts": ["http://127.0.0.1:9200/"]
+        }, es.call_args[1])
+        # TODO: assert that blk.logger.warning is not called
 
     @patch('elasticsearch.Elasticsearch')
     def test_elasticsearch_url(self, es, exec_method):
