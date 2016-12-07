@@ -1,8 +1,9 @@
 import logging
 from unittest.mock import patch
-from nio.util.support.block_test_case import NIOBlockTestCase
-from nio.common.signal.base import Signal
-from ..es_base_block import ESBase
+from nio.block.terminals import DEFAULT_TERMINAL
+from nio.testing.block_test_case import NIOBlockTestCase
+from nio.signal.base import Signal
+from ..es_base import ESBase
 
 
 # Let's simulate that our execute query returns two signals/results
@@ -13,13 +14,6 @@ class TestESBase(NIOBlockTestCase):
     """ Tests basic elasticsearch functionality provided by
     ESBase class
     """
-
-    def setUp(self):
-        super().setUp()
-        self._signals_notified = []
-
-    def signals_notified(self, signals, output_id='default'):
-        self._signals_notified.extend(signals)
 
     @patch('elasticsearch.Elasticsearch.ping')
     def test_connected(self, ping_method, exec_method):
@@ -137,6 +131,19 @@ class TestESBase(NIOBlockTestCase):
             # not called with any additional kwargs
             "hosts": ["http://127.0.0.1:9200/"]
         }, es.call_args[1])
+        # TODO: assert that blk.logger.warning is called
+
+    @patch('elasticsearch.Elasticsearch')
+    def test_empty_client_kwargs(self, es, exec_method):
+        """kwargs that is an empty string should not log a warning."""
+        blk = ESBase()
+        self.configure_block(blk, {
+            "elasticsearch_client_kwargs": ''})
+        self.assertDictEqual({
+            # not called with any additional kwargs
+            "hosts": ["http://127.0.0.1:9200/"]
+        }, es.call_args[1])
+        # TODO: assert that blk.logger.warning is not called
 
     @patch('elasticsearch.Elasticsearch')
     def test_elasticsearch_url(self, es, exec_method):
@@ -178,9 +185,9 @@ class TestESBase(NIOBlockTestCase):
         blk.process_signals([Signal({"field1": "1"})])
         # Assert one signal was notified and it has the mocked value in it
         self.assert_num_signals_notified(1)
-        self.assertDictEqual(self._signals_notified[0].to_dict(),
-                             {"field1": "1",
-                              "result": "value"})
+        self.assertDictEqual(
+            {"field1": "1", "result": "value"},
+            self.last_notified[DEFAULT_TERMINAL][0].__dict__)
         blk.stop()
 
     def test_enrich_signals_field(self, exec_method):
@@ -198,7 +205,7 @@ class TestESBase(NIOBlockTestCase):
         blk.process_signals([Signal({"field1": "1"})])
         # Assert one signal was notified and it has the inserted id in it
         self.assert_num_signals_notified(1)
-        self.assertDictEqual(self._signals_notified[0].to_dict(),
-                             {"field1": "1",
-                              "result": {"result": "value"}})
+        self.assertDictEqual(
+            {"field1": "1", "result": {"result": "value"}},
+            self.last_notified[DEFAULT_TERMINAL][0].__dict__)
         blk.stop()

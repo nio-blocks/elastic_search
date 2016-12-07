@@ -1,8 +1,7 @@
 from unittest.mock import patch
-
-from nio.common.signal.base import Signal
-from nio.util.support.block_test_case import NIOBlockTestCase
-
+from nio.block.terminals import DEFAULT_TERMINAL
+from nio.signal.base import Signal
+from nio.testing.block_test_case import NIOBlockTestCase
 from ..es_insert_block import ESInsert
 
 # The index method is what stores the signals. It should be called
@@ -16,13 +15,6 @@ from ..es_insert_block import ESInsert
 class TestESInsert(NIOBlockTestCase):
 
     """ Tests elasticsearch block insert functionality """
-
-    def setUp(self):
-        super().setUp()
-        self._signals_notified = []
-
-    def signals_notified(self, signals, output_id='default'):
-        self._signals_notified.extend(signals)
 
     def test_insert_called(self, index_method):
         """ Tests that inserts get called for each signal """
@@ -61,7 +53,7 @@ class TestESInsert(NIOBlockTestCase):
         index_method.assert_called_once_with(
             "index_name", "doc_type_name", {
                 "field1": "1",
-                "_type": "nio.common.signal.base.Signal"
+                "_type": "Signal"
             })
         blk.stop()
 
@@ -77,7 +69,7 @@ class TestESInsert(NIOBlockTestCase):
         blk.process_signals([Signal({"_index": "myindex"})])
         index_method.assert_called_once_with(
             "myindex", "doc_type_name", {
-                "_type": "nio.common.signal.base.Signal"
+                "_type": "Signal"
             })
         blk.stop()
 
@@ -107,8 +99,9 @@ class TestESInsert(NIOBlockTestCase):
         blk.process_signals([Signal({"field1": "1"})])
         # Assert one signal was notified and it has the inserted id in it
         self.assert_num_signals_notified(1)
-        self.assertDictEqual(self._signals_notified[0].to_dict(),
-                             {"id": "inserted_id"})
+        self.assertDictEqual(
+            {"id": "inserted_id"},
+            self.last_notified[DEFAULT_TERMINAL][0].__dict__)
         blk.stop()
 
     def test_enrich_signals_merge(self, index_method):
@@ -125,9 +118,9 @@ class TestESInsert(NIOBlockTestCase):
         blk.process_signals([Signal({"field1": "1"})])
         # Assert one signal was notified and it has the inserted id in it
         self.assert_num_signals_notified(1)
-        self.assertDictEqual(self._signals_notified[0].to_dict(),
-                             {"field1": "1",
-                              "id": "inserted_id"})
+        self.assertDictEqual(
+            {"field1": "1", "id": "inserted_id"},
+            self.last_notified[DEFAULT_TERMINAL][0].__dict__)
         blk.stop()
 
     def test_enrich_signals_field(self, index_method):
@@ -145,7 +138,7 @@ class TestESInsert(NIOBlockTestCase):
         blk.process_signals([Signal({"field1": "1"})])
         # Assert one signal was notified and it has the inserted id in it
         self.assert_num_signals_notified(1)
-        self.assertDictEqual(self._signals_notified[0].to_dict(),
-                             {"field1": "1",
-                              "result": {"id": "inserted_id"}})
+        self.assertDictEqual(
+            {"field1": "1", "result": {"id": "inserted_id"}},
+            self.last_notified[DEFAULT_TERMINAL][0].__dict__)
         blk.stop()

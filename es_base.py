@@ -1,11 +1,27 @@
+from time import sleep
 import json
 import logging
-from nio.common.block.base import Block
-from nio.metadata.properties import StringProperty, ExpressionProperty, \
-    IntProperty, BoolProperty, ObjectProperty, PropertyHolder, VarProperty
-from nio.common.command import command
-from .mixins.retry.retry import Retry
-from .mixins.enrich.enrich_signals import EnrichSignals
+from nio.block.base import Block
+from nio.properties import StringProperty, Property, \
+    IntProperty, BoolProperty, ObjectProperty, PropertyHolder
+from nio.command import command
+from nio.block.mixins.retry.retry import Retry
+from nio.block.mixins.retry.strategy import BackoffStrategy
+from nio.block.mixins.enrich.enrich_signals import EnrichSignals, \
+    EnrichProperties
+
+
+class SleepBackoffStrategy(BackoffStrategy):
+
+    def next_retry(self):
+        if self.retry_num > 1:
+            self.logger.error("Aborty retries")
+            return False
+        self.logger.debug(
+            "Waiting {} seconds before retrying execute method".format(
+                self.retry_num))
+        sleep(self.retry_num)
+        return True
 
 
 class AuthData(PropertyHolder):
@@ -26,62 +42,66 @@ class ESBase(Retry, EnrichSignals, Block):
     """
     host = StringProperty(title='ES Host', default="127.0.0.1")
     port = IntProperty(title='ES Port', default=9200)
-    index = ExpressionProperty(title='Index', default="nio")
-    doc_type = ExpressionProperty(title='Type',
-                                  default="{{($__class__.__name__)}}")
-    auth = ObjectProperty(AuthData, title="Authentication")
-    elasticsearch_client_kwargs = VarProperty(title='Client Argurments',
-                                             default=None, allow_none=True)
+    index = Property(title='Index', default="nio")
+    doc_type = Property(title='Type', default="{{($__class__.__name__)}}")
+    auth = ObjectProperty(AuthData, title="Authentication", default=AuthData())
+    elasticsearch_client_kwargs = Property(title='Client Argurments',
+                                           default=None, allow_none=True)
+    # TODO: remove this when nio framework is fixed
+    enrich = ObjectProperty(EnrichProperties, title='Signal Enrichment',
+                            default=EnrichProperties())
 
     def __init__(self):
         super().__init__()
         self._es = None
+        self._backoff_strategy = SleepBackoffStrategy(logger=self.logger)
 
     def configure(self, context):
         super().configure(context)
         self._es = self.create_elastic_search_instance()
-        logging.getLogger('elasticsearch').setLevel(self._logger.logger.level)
+        logging.getLogger('elasticsearch').setLevel(self.logger.logger.level)
 
     def create_elastic_search_instance(self):
         url = self.build_host_url()
-        self._logger.debug(
+        self.logger.debug(
             "Creating ElasticSearch instance for {}".format(url))
         from elasticsearch import Elasticsearch
         from elasticsearch.connection import RequestsHttpConnection
         return Elasticsearch(**self._build_elasticsearch_client_kwargs(url))
 
     def build_host_url(self):
-        if self.auth.username:
+        if self.auth().username():
             return "{}://{}:{}@{}:{}/".format(
-                'https' if self.auth.use_https else 'http',
-                self.auth.username, self.auth.password, self.host, self.port)
+                'https' if self.auth().use_https() else 'http',
+                self.auth().username(), self.auth().password(),
+                self.host(), self.port())
         else:
             return "{}://{}:{}/".format(
-                'https' if self.auth.use_https else 'http',
-                self.host, self.port)
+                'https' if self.auth().use_https() else 'http',
+                self.host(), self.port())
 
     def _build_elasticsearch_client_kwargs(self, url):
         kwargs = {'hosts': [url]}
-        client_kwargs = self.elasticsearch_client_kwargs
+        client_kwargs = self.elasticsearch_client_kwargs() or {}
         if client_kwargs is not None:
             try:
                 if isinstance(client_kwargs, str):
                     client_kwargs = json.loads(client_kwargs)
                 kwargs.update(client_kwargs)
             except:
-                self._logger.warning(
+                self.logger.warning(
                     "Client Arguments needs to be a dictionary: {}".format(
-                        self.elasticsearch_client_kwargs), exc_info=True)
+                        self.elasticsearch_client_kwargs()), exc_info=True)
         return kwargs
 
     def process_signals(self, signals, input_id='default'):
         output = []
         for s in signals:
             doc_type = self._evaluate_doc_type(s)
-            self._logger.debug("doc_type evaluated to: {}".format(doc_type))
+            self.logger.debug("doc_type evaluated to: {}".format(doc_type))
             if doc_type:
                 try:
-                    result = self._execute_with_retry(
+                    result = self.execute_with_retry(
                         self.execute_query, doc_type=doc_type, signal=s)
                     # Expect execute_query to return a dictionary for a signal,
                     # we will enrich according to configuration here
@@ -90,7 +110,7 @@ class ESBase(Retry, EnrichSignals, Block):
                                        for res in result])
                 except:
                     # If the execute call fails, we won't use this signal
-                    self._logger.exception("Query failed")
+                    self.logger.exception("Query failed")
                     continue
 
         # Check if we have anything to output
@@ -127,7 +147,7 @@ class ESBase(Retry, EnrichSignals, Block):
         try:
             return self.doc_type(signal)
         except:
-            self._logger.exception("doc_type failed to evaluate")
+            self.logger.exception("doc_type failed to evaluate")
 
     def connected(self):
         return {'connected': self._es.ping()}
