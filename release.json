@@ -1,0 +1,17 @@
+{
+  "nio/ESBase": {
+    "Version": "1.0.0",
+    "Language": "Python",
+    "Reference": "github.com/nio-blocks/elastic_search.git@v1.0.0"
+  },
+  "nio/ESInsert": {
+    "Version": "1.0.0",
+    "Language": "Python",
+    "Reference": "github.com/nio-blocks/elastic_search.git@v1.0.0"
+  },
+  "nio/ESFind": {
+    "Version": "1.0.0",
+    "Language": "Python",
+    "Reference": "github.com/nio-blocks/elastic_search.git@v1.0.0"
+  }
+}
