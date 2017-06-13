@@ -1,83 +1,86 @@
 {
-  "nio/ESBase": {
-    "Version": "1.0.0",
-    "Category": "Database",
-    "Commands": {
-      "connected": {
-        "description": "determines if elasticsearch server is available"
-      },
-      "search": {
-        "description": "performs a search for given 'body' and 'params' parameters"
-      }
+    "nio/ESFind": {
+        "Input": {
+            "Description": "Signals to be processed"
+        },
+        "Description": "Finds elements from given search parameters",
+        "Commands": {},
+        "Output": {
+            "Description": "Data satisfying find criteria as 'Signal' instances."
+        },
+        "Category": "Database",
+        "Version": "1.0.0",
+        "Properties": {
+            "condition": {
+                "description": "Condition to filter data on"
+            },
+            "offset": {
+                "empty": "string",
+                "description": "Starting offset to use when returning data"
+            },
+            "size": {
+                "empty": "string",
+                "description": "Number of elements to return"
+            },
+            "sort": {
+                "description": "Sorting parameters if any"
+            }
+        }
     },
-    "Properties": {
-      "doc_type": {
-        "description": "The type of the document."
-      },
-      "index": {
-        "description": "The name of the index."
-      },
-      "elasticsearch_client_kwargs": {
-        "e.g.": "{\"maxsize\"",
-        "description": "kwargs to be passed to elasticsearch client."
-      }
+    "nio/ESBase": {
+        "Input": {
+            "Description": "None"
+        },
+        "Description": "Provides base class for elasticsearch blocks.\nEach block defines a query to be executed. If that query fails then one retry will be attempted after first waiting one second. Only if this retry fails will the block log an error.",
+        "Commands": {
+            "connected": {
+                "description": "determines if elasticsearch server is available"
+            },
+            "search": {
+                "description": "performs a search for given 'body' and 'params' parameters"
+            }
+        },
+        "Output": {
+            "Description": "None"
+        },
+        "Category": "Database",
+        "Version": "1.0.0",
+        "Properties": {
+            "doc_type": {
+                "description": "The type of the document."
+            },
+            "elasticsearch_client_kwargs": {
+                "e.g.": "{\"maxsize\"",
+                "description": "kwargs to be passed to elasticsearch client."
+            },
+            "index": {
+                "description": "The name of the index."
+            }
+        }
     },
-    "Output": "None",
-    "Description": "Provides base class for elasticsearch blocks.\nEach block defines a query to be executed. If that query fails then one retry will be attempted after first waiting one second. Only if this retry fails will the block log an error.",
-    "Input": "None",
-    "Dependencies": [
-      "-   [elasticsearch](https://pypi.python.org/pypi/elasticsearch/1.4.0)"
-    ]
-  },
-  "nio/ESInsert": {
-    "Version": "1.0.0",
-    "Category": "Database",
-    "Commands": {},
-    "Properties": {
-      "with_type": {
-        "description": "If True, includes the signal type in the document."
-      },
-      "Results Field": {
-        "type": "str",
-        "description": "The attribute on the signal to store the results from this block. If this is empty, the results will be merged onto the incoming signal. This is the default operation. Having this field allows a block to \"save\" the results of an operation to a single field on an incoming signal and notify the enriched signal."
-      },
-      "Exclude Existing": {
-        "type": "bool",
-        "description": "Whether or not to exclude existing data. If this is checked, a new signal will be notified for every incoming signal. In other words, no data from the incoming signal will be included on the notified signal."
-      }
-    },
-    "Output": "A signal with \"id\" field obtained from inserted document",
-    "Description": "Stores input signals in a elasticsearch database. One document will be inserted into the database for each input signal.",
-    "Input": "One document will be inserted into the database for each input signal.",
-    "Dependencies": [
-      "-   [elasticsearch](https://pypi.python.org/pypi/elasticsearch/1.4.0)"
-    ]
-  },
-  "nio/ESFind": {
-    "Version": "1.0.0",
-    "Category": "Database",
-    "Commands": {},
-    "Properties": {
-      "size": {
-        "description": "Number of elements to return",
-        "empty": "string"
-      },
-      "offset": {
-        "description": "Starting offset to use when returning data",
-        "empty": "string"
-      },
-      "condition": {
-        "description": "Condition to filter data on"
-      },
-      "sort": {
-        "description": "Sorting parameters if any"
-      }
-    },
-    "Output": "Data satisfying find criteria as 'Signal' instances.",
-    "Description": "Finds elements from given search parameters",
-    "Input": "Signals to be processed",
-    "Dependencies": [
-      "-   [elasticsearch](https://pypi.python.org/pypi/elasticsearch/1.4.0)"
-    ]
-  }
+    "nio/ESInsert": {
+        "Input": {
+            "Description": "One document will be inserted into the database for each input signal."
+        },
+        "Description": "Stores input signals in a elasticsearch database. One document will be inserted into the database for each input signal.",
+        "Commands": {},
+        "Output": {
+            "Description": "A signal with \"id\" field obtained from inserted document"
+        },
+        "Category": "Database",
+        "Version": "1.0.0",
+        "Properties": {
+            "with_type": {
+                "description": "If True, includes the signal type in the document."
+            },
+            "Exclude Existing": {
+                "type": "bool",
+                "description": "Whether or not to exclude existing data. If this is checked, a new signal will be notified for every incoming signal. In other words, no data from the incoming signal will be included on the notified signal."
+            },
+            "Results Field": {
+                "type": "str",
+                "description": "The attribute on the signal to store the results from this block. If this is empty, the results will be merged onto the incoming signal. This is the default operation. Having this field allows a block to \"save\" the results of an operation to a single field on an incoming signal and notify the enriched signal."
+            }
+        }
+    }
 }
