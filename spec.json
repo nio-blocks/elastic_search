@@ -27,37 +27,6 @@
             }
         }
     },
-    "nio/ESBase": {
-        "Input": {
-            "Description": "None"
-        },
-        "Description": "Provides base class for elasticsearch blocks.\nEach block defines a query to be executed. If that query fails then one retry will be attempted after first waiting one second. Only if this retry fails will the block log an error.",
-        "Commands": {
-            "connected": {
-                "description": "determines if elasticsearch server is available"
-            },
-            "search": {
-                "description": "performs a search for given 'body' and 'params' parameters"
-            }
-        },
-        "Output": {
-            "Description": "None"
-        },
-        "Category": "Database",
-        "Version": "1.0.0",
-        "Properties": {
-            "doc_type": {
-                "description": "The type of the document."
-            },
-            "elasticsearch_client_kwargs": {
-                "e.g.": "{\"maxsize\"",
-                "description": "kwargs to be passed to elasticsearch client."
-            },
-            "index": {
-                "description": "The name of the index."
-            }
-        }
-    },
     "nio/ESInsert": {
         "Input": {
             "Description": "One document will be inserted into the database for each input signal."
