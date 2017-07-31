@@ -52,7 +52,7 @@ class TestESBase(NIOBlockTestCase):
     def test_bad_query(self, exec_method):
         """ Make sure that no signals get processed on a bad doc_type """
         blk = ESBase()
-        self.configure_block(blk, {})
+        self.configure_block(blk, {"retry_options": {"max_retry": 1}})
         blk.start()
         # Execute query will raise an exception
         exec_method.side_effect = Exception('bad query')
