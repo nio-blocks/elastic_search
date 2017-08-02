@@ -1,55 +1,18 @@
 {
-    "nio/ESFind": {
-        "Input": {
-            "Description": "Signals to be processed"
-        },
-        "Description": "Finds elements from given search parameters",
-        "Commands": {},
-        "Output": {
-            "Description": "Data satisfying find criteria as 'Signal' instances."
-        },
-        "Category": "Database",
-        "Version": "1.0.0",
-        "Properties": {
-            "condition": {
-                "description": "Condition to filter data on"
-            },
-            "offset": {
-                "empty": "string",
-                "description": "Starting offset to use when returning data"
-            },
-            "size": {
-                "empty": "string",
-                "description": "Number of elements to return"
-            },
-            "sort": {
-                "description": "Sorting parameters if any"
-            }
-        }
-    },
-    "nio/ESInsert": {
-        "Input": {
-            "Description": "One document will be inserted into the database for each input signal."
-        },
-        "Description": "Stores input signals in a elasticsearch database. One document will be inserted into the database for each input signal.",
-        "Commands": {},
-        "Output": {
-            "Description": "A signal with \"id\" field obtained from inserted document"
-        },
-        "Category": "Database",
-        "Version": "1.0.0",
-        "Properties": {
-            "with_type": {
-                "description": "If True, includes the signal type in the document."
-            },
-            "Exclude Existing": {
-                "type": "bool",
-                "description": "Whether or not to exclude existing data. If this is checked, a new signal will be notified for every incoming signal. In other words, no data from the incoming signal will be included on the notified signal."
-            },
-            "Results Field": {
-                "type": "str",
-                "description": "The attribute on the signal to store the results from this block. If this is empty, the results will be merged onto the incoming signal. This is the default operation. Having this field allows a block to \"save\" the results of an operation to a single field on an incoming signal and notify the enriched signal."
-            }
-        }
-    }
+  "nio/ESFind": {
+    "version": "0.0.1",
+    "description": "",
+    "inputs": {},
+    "outputs": {},
+    "properties": {},
+    "commands": {}
+  },
+  "nio/ESInsert": {
+    "version": "0.0.1",
+    "description": "",
+    "inputs": {},
+    "outputs": {},
+    "properties": {},
+    "commands": {}
+  }
 }
