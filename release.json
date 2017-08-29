@@ -1,12 +1,12 @@
 {
   "nio/ESFind": {
     "language": "Python",
-    "version": "0.0.1",
-    "url": "git://github.com/nio-blocks/elastic_search.git"
+    "url": "git://github.com/nio-blocks/elastic_search.git",
+    "version": "0.1.0"
   },
   "nio/ESInsert": {
     "language": "Python",
-    "version": "0.0.1",
-    "url": "git://github.com/nio-blocks/elastic_search.git"
+    "url": "git://github.com/nio-blocks/elastic_search.git",
+    "version": "0.1.0"
   }
 }

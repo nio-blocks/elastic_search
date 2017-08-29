@@ -1,91 +1,67 @@
-ESBase
-===========
-
-Provides base class for elasticsearch blocks.
-
-Each block defines a query to be executed. If that query fails then one retry will be attempted after first waiting one second. Only if this retry fails will the block log an error.
+ESFind
+======
+Finds elements from given search parameters.
 
 Properties
---------------
+----------
+- **auth**: Username and password credentials to connect to the Elastic Search database.
+- **condition**: Condition to filter data on.
+- **doc_type**: The type of the document to query.
+- **elasticsearch_client_kwargs**: kwargs to be passed to elasticsearch client. (e.g.: {'maxsize': 15})
+- **enrich**: *enrich_field:* The attribute on the signal to store the results from this block. If this is empty, the results will be merged onto the incoming signal. This is the default operation. Having this field allows a block to 'save' the results of an operation to a single field on an incoming signal and notify the enriched signal.  *results field:* The attribute on the signal to store the results from this block. If this is empty, the results will be merged onto the incoming signal. This is the default operation. Having this field allows a block to save the results of an operation to a single field on an incoming signal and notify the enriched signal.
+- **host**: The Elastic Search database's host address.
+- **index**: The name of the index.
+- **offset**: Starting offset to use when returning data (empty string to not include in query).
+- **port**: The port where the Elastic Search database is located
+- **pretty_results**: If true, only include query results and no other extraneous information.
+- **retry_options**: Configurables for retrying connection.
+- **size**: Number of elements to return (empty string to not include in query).
+- **sort**: Parameters to sort results by.
 
--   **index**: The name of the index.
--   **doc_type**: The type of the document.
--   **elasticsearch_client_kwargs**: kwargs to be passed to elasticsearch client. (e.g.: {"maxsize": 15"})
+Inputs
+------
+- **default**: Any list of signals.
 
-Dependencies
-----------------
--   [elasticsearch](https://pypi.python.org/pypi/elasticsearch/1.4.0)
+Outputs
+-------
+- **default**: Data satisfying find criteria as 'Signal' instances.
 
 Commands
-----------------
-connected: determines if elasticsearch server is available
-search: performs a search for given 'body' and 'params' parameters
+--------
+- **connected**: Determines if elasticsearch server is available.
 
-Input
--------
-None
-
-Output
----------
-None
-
-***
+Dependencies
+------------
+-   [elasticsearch](https://pypi.python.org/pypi/elasticsearch/1.4.0)
 
 ESInsert
-================
-
+========
 Stores input signals in a elasticsearch database. One document will be inserted into the database for each input signal.
 
 Properties
---------------
+----------
+- **auth**: Username and password credentials to connect to the Elastic Search database.
+- **doc_type**: The type of the document to query.
+- **elasticsearch_client_kwargs**: kwargs to be passed to elasticsearch client. (e.g.: {'maxsize': 15})
+- **enrich**: *enrich_field:* The attribute on the signal to store the results from this block. If this is empty, the results will be merged onto the incoming signal. This is the default operation. Having this field allows a block to 'save' the results of an operation to a single field on an incoming signal and notify the enriched signal.  *results field:* The attribute on the signal to store the results from this block. If this is empty, the results will be merged onto the incoming signal. This is the default operation. Having this field allows a block to save the results of an operation to a single field on an incoming signal and notify the enriched signal.
+- **host**: The Elastic Search database's host address.
+- **index**: The name of the index.
+- **port**: The port where the Elastic Search database is located
+- **retry_options**: Configurables for retrying connection.
+- **with_type**: If True, includes the signal type in the document.
 
--   **with_type**: If True, includes the signal type in the document.
--   **Exclude Existing** (type=bool): Whether or not to exclude existing data. If this is checked, a new signal will be notified for every incoming signal. In other words, no data from the incoming signal will be included on the notified signal.
--   **Results Field** (type=str): The attribute on the signal to store the results from this block. If this is empty, the results will be merged onto the incoming signal. This is the default operation. Having this field allows a block to "save" the results of an operation to a single field on an incoming signal and notify the enriched signal.
+Inputs
+------
+- **default**: Any list of signals.  One document will be inserted into the database for each input signal.
 
-Dependencies
-----------------
--   [elasticsearch](https://pypi.python.org/pypi/elasticsearch/1.4.0)
+Outputs
+-------
+- **default**: A signal with 'id' field obtained from inserted document.
 
 Commands
-----------------
-None
-
-Input
--------
-One document will be inserted into the database for each input signal.
-
-Output
----------
-A signal with "id" field obtained from inserted document
-
-***
-
-ESFind
-===========
-
-Finds elements from given search parameters
-
-Properties
---------------
-
--   **condition**: Condition to filter data on
--   **size**: Number of elements to return (empty string to not include in query)
--   **offset**: Starting offset to use when returning data (empty string to not include in query)
--   **sort**: Sorting parameters if any
+--------
+- **connected**: Determines if elasticsearch server is available.
 
 Dependencies
---------------
+------------
 -   [elasticsearch](https://pypi.python.org/pypi/elasticsearch/1.4.0)
-
-Commands
---------------
-None
-
-Input
--------
-Signals to be processed
-
-Output
----------
-Data satisfying find criteria as 'Signal' instances.

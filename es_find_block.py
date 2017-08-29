@@ -1,6 +1,5 @@
 from enum import Enum
 
-from nio.util.discovery import discoverable
 from nio.properties import ListProperty, SelectProperty, \
     PropertyHolder, StringProperty, Property, BoolProperty, \
     VersionProperty
@@ -66,7 +65,6 @@ class Sortable():
         return existing_args
 
 
-@discoverable
 class ESFind(Limitable, Sortable, ESBase):
 
     """ A block for running `search` against a elasticsearch.

@@ -1,18 +1,202 @@
 {
   "nio/ESFind": {
-    "version": "0.0.1",
-    "description": "",
-    "inputs": {},
-    "outputs": {},
-    "properties": {},
-    "commands": {}
+    "version": "0.1.0",
+    "description": "Finds elements from given search parameters.",
+    "properties": {
+      "auth": {
+        "title": "Authentication",
+        "type": "ObjectType",
+        "description": "Username and password credentials to connect to the Elastic Search database.",
+        "default": {
+          "use_https": false,
+          "username": "",
+          "password": ""
+        }
+      },
+      "condition": {
+        "title": "Condition",
+        "type": "Type",
+        "description": "Condition to filter data on.",
+        "default": "{'match_all': {}}"
+      },
+      "doc_type": {
+        "title": "Type",
+        "type": "Type",
+        "description": "The type of the document to query.",
+        "default": "{{($__class__.__name__)}}"
+      },
+      "elasticsearch_client_kwargs": {
+        "title": "Client Argurments",
+        "type": "Type",
+        "description": "kwargs to be passed to elasticsearch client. (e.g.: {'maxsize': 15})",
+        "default": null
+      },
+      "enrich": {
+        "title": "Signal Enrichment",
+        "type": "ObjectType",
+        "description": "*enrich_field:* The attribute on the signal to store the results from this block. If this is empty, the results will be merged onto the incoming signal. This is the default operation. Having this field allows a block to 'save' the results of an operation to a single field on an incoming signal and notify the enriched signal.  *results field:* The attribute on the signal to store the results from this block. If this is empty, the results will be merged onto the incoming signal. This is the default operation. Having this field allows a block to save the results of an operation to a single field on an incoming signal and notify the enriched signal.",
+        "default": {
+          "exclude_existing": true,
+          "enrich_field": ""
+        }
+      },
+      "host": {
+        "title": "ES Host",
+        "type": "StringType",
+        "description": "The Elastic Search database's host address.",
+        "default": "127.0.0.1"
+      },
+      "index": {
+        "title": "Index",
+        "type": "Type",
+        "description": "The name of the index.",
+        "default": "nio"
+      },
+      "offset": {
+        "title": "Offset",
+        "type": "Type",
+        "description": "Starting offset to use when returning data (empty string to not include in query).",
+        "default": ""
+      },
+      "port": {
+        "title": "ES Port",
+        "type": "IntType",
+        "description": "The port where the Elastic Search database is located",
+        "default": 9200
+      },
+      "pretty_results": {
+        "title": "Pretty Results",
+        "type": "BoolType",
+        "description": "If true, only include query results and no other extraneous information.",
+        "default": true
+      },
+      "retry_options": {
+        "title": "Retry Options",
+        "type": "ObjectType",
+        "description": "Configurables for retrying connection.",
+        "default": {
+          "strategy": "linear",
+          "multiplier": 1,
+          "max_retry": 5,
+          "indefinite": false
+        }
+      },
+      "size": {
+        "title": "Size",
+        "type": "Type",
+        "description": "Number of elements to return (empty string to not include in query).",
+        "default": ""
+      },
+      "sort": {
+        "title": "Sort",
+        "type": "ListType",
+        "description": "Parameters to sort results by.",
+        "default": []
+      }
+    },
+    "inputs": {
+      "default": {
+        "description": "Any list of signals."
+      }
+    },
+    "outputs": {
+      "default": {
+        "description": "Data satisfying find criteria as 'Signal' instances."
+      }
+    },
+    "commands": {
+      "connected": {
+        "params": {},
+        "description": "Determines if elasticsearch server is available."
+      }
+    }
   },
   "nio/ESInsert": {
-    "version": "0.0.1",
-    "description": "",
-    "inputs": {},
-    "outputs": {},
-    "properties": {},
-    "commands": {}
+    "version": "0.1.0",
+    "description": "Stores input signals in a elasticsearch database. One document will be inserted into the database for each input signal.",
+    "properties": {
+      "auth": {
+        "title": "Authentication",
+        "type": "ObjectType",
+        "description": "Username and password credentials to connect to the Elastic Search database.",
+        "default": {
+          "use_https": false,
+          "username": "",
+          "password": ""
+        }
+      },
+      "doc_type": {
+        "title": "Type",
+        "type": "Type",
+        "description": "The type of the document to query.",
+        "default": "{{($__class__.__name__)}}"
+      },
+      "elasticsearch_client_kwargs": {
+        "title": "Client Argurments",
+        "type": "Type",
+        "description": "kwargs to be passed to elasticsearch client. (e.g.: {'maxsize': 15})",
+        "default": null
+      },
+      "enrich": {
+        "title": "Signal Enrichment",
+        "type": "ObjectType",
+        "description": "*enrich_field:* The attribute on the signal to store the results from this block. If this is empty, the results will be merged onto the incoming signal. This is the default operation. Having this field allows a block to 'save' the results of an operation to a single field on an incoming signal and notify the enriched signal.  *results field:* The attribute on the signal to store the results from this block. If this is empty, the results will be merged onto the incoming signal. This is the default operation. Having this field allows a block to save the results of an operation to a single field on an incoming signal and notify the enriched signal.",
+        "default": {
+          "exclude_existing": true,
+          "enrich_field": ""
+        }
+      },
+      "host": {
+        "title": "ES Host",
+        "type": "StringType",
+        "description": "The Elastic Search database's host address.",
+        "default": "127.0.0.1"
+      },
+      "index": {
+        "title": "Index",
+        "type": "Type",
+        "description": "The name of the index.",
+        "default": "nio"
+      },
+      "port": {
+        "title": "ES Port",
+        "type": "IntType",
+        "description": "The port where the Elastic Search database is located",
+        "default": 9200
+      },
+      "retry_options": {
+        "title": "Retry Options",
+        "type": "ObjectType",
+        "description": "Configurables for retrying connection.",
+        "default": {
+          "strategy": "linear",
+          "multiplier": 1,
+          "max_retry": 5,
+          "indefinite": false
+        }
+      },
+      "with_type": {
+        "title": "Include the type of logged signals?",
+        "type": "BoolType",
+        "description": "If True, includes the signal type in the document.",
+        "default": false
+      }
+    },
+    "inputs": {
+      "default": {
+        "description": "Any list of signals.  One document will be inserted into the database for each input signal."
+      }
+    },
+    "outputs": {
+      "default": {
+        "description": "A signal with 'id' field obtained from inserted document."
+      }
+    },
+    "commands": {
+      "connected": {
+        "params": {},
+        "description": "Determines if elasticsearch server is available."
+      }
+    }
   }
 }

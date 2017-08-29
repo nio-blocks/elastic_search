@@ -186,7 +186,11 @@ class TestESFind(NIOBlockTestCase):
         # but multiple results are returned
         self.assert_num_signals_notified(2)
         self.assertEqual(
-            self.last_notified[DEFAULT_TERMINAL][0].result_key_1, "result_val_1")
+            self.last_notified[DEFAULT_TERMINAL][0].result_key_1,
+            "result_val_1"
+        )
         self.assertEqual(
-            self.last_notified[DEFAULT_TERMINAL][1].result_key_2, "result_val_2")
+            self.last_notified[DEFAULT_TERMINAL][1].result_key_2,
+            "result_val_2"
+        )
         blk.stop()
