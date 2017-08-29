@@ -1,6 +1,7 @@
 from time import sleep
 import json
 import logging
+
 from nio.block.base import Block
 from nio.properties import StringProperty, Property, \
     IntProperty, BoolProperty, ObjectProperty, PropertyHolder
@@ -9,6 +10,7 @@ from nio.block.mixins.retry.retry import Retry
 from nio.block.mixins.retry.strategy import BackoffStrategy
 from nio.block.mixins.enrich.enrich_signals import EnrichSignals, \
     EnrichProperties
+from nio.util.discovery import not_discoverable
 
 
 class SleepBackoffStrategy(BackoffStrategy):
@@ -30,6 +32,7 @@ class AuthData(PropertyHolder):
     use_https = BoolProperty(title="Use HTTPS?", default=False)
 
 
+@not_discoverable
 @command("connected")
 class ESBase(Retry, EnrichSignals, Block):
 

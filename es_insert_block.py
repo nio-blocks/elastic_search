@@ -1,6 +1,7 @@
-from .es_base import ESBase
 from nio.util.discovery import discoverable
 from nio.properties import BoolProperty, VersionProperty
+
+from .es_base import ESBase
 
 
 @discoverable
@@ -34,8 +35,8 @@ class ESInsert(ESBase):
                 "Unable to determine index for {}".format(signal))
             return []
 
-        self.logger.debug("Inserting {} to: {}, type: {}".
-                           format(body, index, doc_type))
+        self.logger.debug(
+            "Inserting {} to: {}, type: {}".format(body, index, doc_type))
 
         result = self._es.index(index, doc_type, body)
         if result and "_id" in result:
