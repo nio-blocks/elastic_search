@@ -1,10 +1,8 @@
-from nio.util.discovery import discoverable
 from nio.properties import BoolProperty, VersionProperty
 
 from .es_base import ESBase
 
 
-@discoverable
 class ESInsert(ESBase):
 
     """ A block for recording signals or other such
