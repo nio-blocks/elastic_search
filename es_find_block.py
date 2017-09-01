@@ -75,7 +75,7 @@ class ESFind(Limitable, Sortable, ESBase):
         or be a parseable JSON string
 
     """
-    version = VersionProperty('0.1.0')
+    version = VersionProperty("0.1.0")
     condition = Property(
         title='Condition', default="{'match_all': {}}")
     pretty_results = BoolProperty(title='Pretty Results', default=True)
