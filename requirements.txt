@@ -1,2 +1,2 @@
 requests~=2.0
-elasticsearch~=6.3
+elasticsearch~=5.0
